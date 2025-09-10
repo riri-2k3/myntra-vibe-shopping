@@ -28,7 +28,7 @@ st.markdown("""
     /* Apply theme colors */
     .stApp {
         background-color: var(--background-color);
-        color: #ff005b;
+        color: #ff3f6c;
         font-family: var(--font);
     }
     .st-emotion-cache-1r651z9 { /* Sidebar background */
@@ -40,7 +40,7 @@ st.markdown("""
 
     /* Header and sub-header styling */
     .main-header {
-        color: #ff3f6c;
+        color: var(--primary-color);
         text-align: center;
         font-family: 'Arial', sans-serif;
         font-size: 3rem;
