@@ -1,0 +1,88 @@
+{
+  "dark academia": [
+    "vintage",
+    "classic",
+    "scholarly",
+    "tweed",
+    "library",
+    "books",
+    "gothic",
+    "romantic academia"
+  ],
+  "cottagecore": [
+    "rural",
+    "pastoral",
+    "vintage floral",
+    "cozy",
+    "handmade",
+    "rustic",
+    "cottage",
+    "farmhouse"
+  ],
+  "y2k": [
+    "futuristic",
+    "metallic",
+    "cyber",
+    "holographic",
+    "tech",
+    "millennium",
+    "digital",
+    "space age"
+  ],
+  "minimalist": [
+    "clean",
+    "simple",
+    "neutral",
+    "basic",
+    "essential",
+    "uncluttered",
+    "modern",
+    "sleek"
+  ],
+  "grunge": [
+    "edgy",
+    "distressed",
+    "alternative",
+    "punk",
+    "rebellious",
+    "vintage denim",
+    "band tees"
+  ],
+  "soft girl": [
+    "pastel",
+    "cute",
+    "kawaii",
+    "blush",
+    "feminine",
+    "dreamy",
+    "innocent",
+    "sweet"
+  ],
+  "indie sleaze": [
+    "vintage",
+    "thrifted",
+    "eclectic",
+    "artsy",
+    "bohemian",
+    "creative",
+    "unconventional"
+  ],
+  "coquette": [
+    "feminine",
+    "romantic",
+    "delicate",
+    "bows",
+    "lace",
+    "girly",
+    "pretty",
+    "dainty"
+  ],
+  "jackie kennedy": [
+    "classic elegance",
+    "vintage chic",
+    "timeless",
+    "pillbox hats",
+    "tuxedo dress",
+    "clean lines"
+  ]
+}
