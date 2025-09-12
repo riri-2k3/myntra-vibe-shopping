@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Myntra Vibe Shopping</title>
+
+  <!-- Google font: Montserrat, Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* CSS Reset for consistent cross-browser styling */
+    html {
+      box-sizing: border-box;
+      scroll-behavior: smooth;
+    }
+    *, *::before, *::after {
+      box-sizing: inherit;
+    }
+    body, h1, h2, p {
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Core Styles and Variables */
+    :root{
+      --myntra-pink:#ff3f6c;
+      --myntra-pink-2:#ff6584;
+      --muted:#6b6b6b;
+      --card-radius:flex;
+      --shadow: 0 8px 24px rgba(15,15,15,0.06);
+      --glass: rgba(255,255,255,0.9);
+      --accent: #ff3f6c;
+      --hero-gradient-start: #b36dff; /* Purplish hue from the image */
+      --hero-gradient-end: #ff3f6c;   /* Myntra pink */
+    }
+    body{
+      margin:0;
+      font-family: 'Montserrat', sans-serif;
+      color:#111827;
+      background:#fafafa;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Full-width container to allow backgrounds to stretch */
+    .full-width-container {
+      width: 100%;
+    }
+
+    /* Content container for central alignment */
+    .content-container {
+    max-width: 100%;  /* wider than before */
+    margin: 0 auto;
+    padding: 0 20px;
+    }
+    /* Catalog section (full-width) */
+    .catalog {
+    width: 100%;
+    
+    margin: 40px auto;
+    padding: 0 40px;
+    }
+
+    /* Navbar */
+    header.nav{
+      background: #fff;
+      border-radius:12px;
+      padding:24px 24px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      box-shadow: 0 4px 14px rgba(16,24,40,0.04);
+      margin-top:28px;
+      margin-bottom:28px;
+      position:fixed;
+      top:0;
+      z-index:10;
+      transition: top 0.3s ease;
+      width: 200vh;
+      
+    }
+    .nav.scrolled {
+      top: 0;
+      border-radius: 0;
+      padding: 16px 16px;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .brand .logo{
+      font-weight:800;
+      color:var(--myntra-pink);
+      font-size:28px;
+      letter-spacing:0.2px;
+    }
+    .navlinks a{
+      margin-left:24px;
+      text-decoration:none;
+      color:#111827;
+      font-weight:600;
+      opacity:0.9;
+      transition: color 0.2s ease;
+      font-family: 'Inter', sans-serif;
+    }
+    .navlinks a:hover{color:var(--accent)}
+
+    .main-full-width-container {
+  width: 100%;
+  background: white; /* Match the card background */
+  padding: 40px 0; /* Add top and bottom padding */
+  box-shadow: var(--shadow); /* Optional: add a subtle shadow for depth */
+}
+
+    /* Hero */
+    .hero-container {
+      background-image: url('myntra.jpeg');
+      background-size: cover; /* Ensures the image covers the entire container */
+      background-position: center; /* Centers the image within the container */
+      padding: 0;
+      min-height: 100vh; /* This makes the hero section full-screen height */
+      margin-bottom: 36px;
+      display: flex; /* Use flexbox to center the content */
+      align-items: center; /* Vertically centers the .hero content */
+      justify-content: center; /* Horizontally centers the .hero content */
+    }
+     
+    .hero{
+      border-radius:20px;
+      padding:60px 40px;
+      color:white;
+      box-shadow: 0 10px 30px rgba(255, 99, 130, 0.09);
+      text-align:center;
+      transition: transform 0.3s ease;
+    }
+    .hero:hover {
+      transform: translateY(-5px);
+    }
+    .hero h1{
+      font-size:48px;
+      margin:0 0 12px 0;
+      font-weight:800;
+      letter-spacing:-1px;
+    }
+    .hero p{margin:0 0 24px 0; opacity:0.95; font-size:18px}
+    .search-row{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:16px;
+      margin-top:16px;
+    }
+    .search-input{
+      width:min(900px, 88%);
+      background:rgba(255,255,255,0.98);
+      border-radius:999px;
+      padding:16px 24px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    }
+    .search-input input{
+      border:0; outline:0; font-size:16px; width:100%;
+      background:transparent;
+      font-family: 'Inter', sans-serif;
+    }
+    .search-btn{
+      background:var(--accent);
+      color:white;
+      border-radius:12px;
+      padding:12px 18px;
+      font-weight:700;
+      cursor:pointer;
+      border:0;
+      transition: background 0.3s ease, transform 0.2s ease;
+      font-family: 'Inter', sans-serif;
+    }
+    .search-btn:hover {
+      background: #e6395e;
+      transform: translateY(-2px);
+    }
+
+    /* Main content layout */
+    .two-col{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:28px;
+    }
+    @media(min-width:980px){
+      .two-col{grid-template-columns: 2fr 1fr}
+    }
+
+    /* Card */
+    .card{
+      background:white;
+      padding:24px;
+      border-radius:var(--card-radius);
+      box-shadow:var(--shadow);
+    }
+
+    /* Vibe Search area */
+    .vibe-card .controls{
+      display:flex;
+      gap:16px;
+      align-items:center;
+      margin-bottom:20px;
+      flex-wrap:wrap;
+    }
+    .vibe-card input[type="text"]{
+      flex:1;
+      padding:14px 18px;
+      border-radius:10px;
+      border:1px solid #ececec;
+      font-size:16px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      font-family: 'Inter', sans-serif;
+    }
+    .vibe-card input[type="text"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255, 63, 108, 0.1);
+    }
+    .upload-btn{
+      border:1px dashed #e5e7eb;
+      padding:12px 16px;
+      border-radius:10px;
+      cursor:pointer;
+      background:#fff;
+      font-weight:600;
+      transition: border-color 0.2s ease, background 0.2s ease;
+      font-family: 'Inter', sans-serif;
+    }
+    .upload-btn:hover {
+      background: #fafafa;
+      border-color: #ddd;
+    }
+
+    /* product grid */
+    .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+    }
+    @media(min-width:700px){
+      .grid{grid-template-columns: repeat(3,1fr)}
+    }
+    .product{
+      border-radius:12px;
+      overflow:hidden;
+      background:white;
+      border:1px solid #f3f4f6;
+      transition: transform .25s ease, box-shadow .25s ease;
+      cursor: pointer;
+    }
+    .product:hover{ 
+      transform: translateY(-8px); 
+      box-shadow: 0 18px 40px rgba(11,22,45,0.08);
+    }
+    .product .imgwrap{height:250px; background:#fafafa; display:flex; align-items:center; justify-content:center}
+    .product img{width:100%; height:100%; object-fit:cover}
+    .product .meta{padding:16px; font-family: 'Inter', sans-serif;}
+    .product h4{margin:0 0 8px; font-size:16px; font-weight:700;}
+    .price{color:#111827; font-weight:800; margin-bottom:10px; font-size:17px;}
+    .tags{font-size:13px; color:var(--muted); display:block}
+    .small{font-size:13px; color:#9ca3af}
+
+    /* Right column - trend radar */
+    .trend-card .controls{display:flex; gap:16px; align-items:center; margin-bottom:12px}
+    select.city{
+      padding:12px 16px; 
+      border-radius:12px; 
+      border:1px solid #eee;
+      background: white;
+      transition: border-color 0.2s ease;
+      font-family: 'Inter', sans-serif;
+    }
+    select.city:focus {
+      border-color: var(--accent);
+    }
+    .chips{display:flex; gap:12px; flex-wrap:wrap; transition: all 0.3s ease;}
+    .chip{
+      background:#fff0f4; 
+      border:1px solid rgba(255,63,108,0.12); 
+      color:var(--accent); 
+      padding:10px 16px; 
+      border-radius:999px; 
+      font-weight:700; 
+      font-size:14px; 
+      cursor:pointer;
+      transition: background 0.2s ease, transform 0.2s ease;
+      font-family: 'Inter', sans-serif;
+    }
+    .chip:hover{
+      background:#ffc7d7;
+      transform: translateY(-2px);
+    }
+    .chip:active {
+      transform: translateY(0);
+    }
+
+    /* featured small horizontal product list */
+    .featured-row{display:flex; gap:16px; overflow-x: auto; padding-top:12px; padding-bottom: 12px; scrollbar-width: none;}
+    .featured-row::-webkit-scrollbar {
+      display: none;
+    }
+    .featured-item{
+      min-width:180px; 
+      border-radius:12px; 
+      overflow:hidden; 
+      background:white; 
+      border:1px solid #f3f4f6;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+    }
+    .featured-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(11,22,45,0.06);
+    }
+    .featured-item img{width:100%; height:140px; object-fit:cover}
+    .featured-item .ft-meta{padding:10px 12px}
+
+    /* Spacing and Utilities */
+    .section-title{font-size:22px; font-weight:800; margin-bottom:14px; font-family: 'Montserrat', sans-serif;}
+    .muted{color:var(--muted); font-family: 'Inter', sans-serif;}
+    
+    .loading-spinner {
+      display: none;
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--myntra-pink);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    @media(max-width: 768px) {
+        .navlinks {
+            display: none; /* Hide nav links on small screens for simplicity */
+        }
+        header.nav {
+          padding: 16px 20px;
+        }
+    }
+  </style>
+</head>
+<body>
+  <div class="full-width-container">
+    <div class="content-container">
+      <!-- NAV -->
+      <header class="nav">
+        <div class="brand">
+          <div class="logo">Myntra</div>
+        </div>
+        <nav class="navlinks">
+          <a href="#home">Home</a>
+          <a href="#vibe">Vibe Search</a>
+          <a href="#trend">Trend Radar</a>
+        </nav>
+      </header>
+    </div>
+  </div>
+
+  <div class="full-width-container hero-container">
+    <div class="content-container">
+      <!-- HERO -->
+
+      <section class="hero" id="home">
+        <h1>Shop by Vibe, Not Keywords ✨</h1>
+        <p>Describe your mood, moment, or aesthetic and let AI find your perfect fit.</p>
+
+        <div class="search-row" role="search">
+          <div class="search-input">
+            <input id="mainSearch" type="text" placeholder="Search by vibe, mood, or moment..." />
+            <button class="search-btn" onclick="triggerSearch()">Search</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="main-full-width-container">
+    <div class="content-container">
+      <main class="two-col">
+
+        <div class="vibe-card card" id="vibe">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <div>
+              <div class="section-title">Vibe Search</div>
+              <div class="muted">Type a vibe or upload an inspirational image</div>
+            </div>
+            <div class="small muted">Demo MVP</div>
+          </div>
+
+          <div class="controls" style="margin-top:12px;">
+            <input id="vibeInput" type="text" placeholder="outfit for rooftop karaoke night with friends" />
+            <label class="upload-btn">
+              Upload Image
+              <input id="imageUpload" type="file" accept="image/*" style="display:none" onchange="previewUpload(event)" />
+            </label>
+            <button class="search-btn" onclick="submitVibe()">Find Vibes</button>
+          </div>
+
+          <div style="margin-top:14px;">
+            <div id="resultsGrid" class="grid">
+              <div class="loading-spinner"></div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="trend-card card" id="trend">
+          <div style="display:flex; justify-content:space-between; align-items:center">
+            <div>
+              <div class="section-title">Trending Radar</div>
+              <div class="muted">Hyper-local trends for your city</div>
+            </div>
+            <div class="small muted">Live demo</div>
+          </div>
+
+          <div class="controls" style="margin-top:12px;">
+            <select id="citySelect" class="city" onchange="loadTrends()">
+              <option>Bangalore</option>
+              <option>Mumbai</option>
+              <option>Delhi</option>
+              <option>Lucknow</option>
+              <option>Indore</option>
+              <option>Jaipur</option>
+            </select>
+          </div>
+
+          <div style="margin-top:12px" id="chipsArea">
+            </div>
+
+          <div style="margin-top:18px">
+            <div class="section-title" style="font-size:16px">Featured Products</div>
+            <div id="featuredRow" class="featured-row">
+              </div>
+          </div>
+        </aside>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const BACKEND_URL = 'http://localhost:8000'; // Define the backend URL
+
+    // Render product cards from a list of products
+    function renderProducts(products){
+      const grid = document.getElementById('resultsGrid');
+      grid.innerHTML = ''; // Clear previous results
+      if (products.length === 0) {
+        grid.innerHTML = '<div style="text-align:center; padding: 20px;">No products found for this vibe. Try a different query!</div>';
+        return;
+      }
+      products.forEach(p=>{
+        const card = document.createElement('div');
+        card.className = 'product';
+        card.innerHTML = `
+          <div class="imgwrap"><img src="${p.image}" alt="${p.title}" /></div>
+          <div class="meta">
+            <h4>${escapeHtml(p.title)}</h4>
+            <div class="price">₹ ${p.price}</div>
+            <div class="tags">${escapeHtml(p.tags)}</div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // Render featured product cards
+    function renderFeatured(products){
+      const row = document.getElementById('featuredRow');
+      row.innerHTML = '';
+      products.forEach(p=>{
+        const el = document.createElement('div');
+        el.className = 'featured-item';
+        el.innerHTML = `
+          <img src="${p.image}" alt="${p.title}" />
+          <div class="ft-meta">
+            <div style="font-weight:700">${p.title}</div>
+            <div class="small muted">₹ ${p.price}</div>
+          </div>
+        `;
+        row.appendChild(el);
+      });
+    }
+
+    // Render a list of chips
+    function renderChips(chips){
+      const area = document.getElementById('chipsArea');
+      area.innerHTML = '';
+      const wrap = document.createElement('div');
+      wrap.className = 'chips';
+      chips.forEach(c=>{
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.textContent = '#'+c;
+        chip.onclick = () => {
+          document.getElementById('vibeInput').value = c;
+          submitVibe();
+        };
+        wrap.appendChild(chip);
+      });
+      area.appendChild(wrap);
+    }
+
+    // escape to avoid accidental HTML injection
+    function escapeHtml(unsafe){ return unsafe.replace(/[&<"']/g, m => ({'&':'&amp;','<':'&lt;','"':'&quot;',"'":'&#039;'}[m])); }
+
+    // --- Vibe search function that calls the backend API ---
+    async function submitVibe(){
+      const vibeText = document.getElementById('vibeInput').value.trim();
+      if(!vibeText){
+        const grid = document.getElementById('resultsGrid');
+        grid.innerHTML = '<div style="text-align:center; padding: 20px;">Please enter a vibe to search.</div>';
+        console.error('Please enter a vibe (e.g., "cozy cottagecore picnic")');
+        return;
+      }
+
+      // Show loading spinner
+      const grid = document.getElementById('resultsGrid');
+      grid.innerHTML = '<div class="loading-spinner" style="display:block;"></div>';
+      
+      const btn = document.querySelector('.vibe-card .search-btn');
+      const prev = btn.innerText;
+      btn.innerText = 'Searching...'; 
+      btn.disabled = true;
+
+      try{
+        const res = await fetch(BACKEND_URL + '/search/vibe-hybrid', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({vibe: vibeText, max_results: 9})
+        });
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! Status: ${res.status}`);
+        }
+        
+        const data = await res.json();
+        if(data && data.products) {
+          // Map backend product data to a format the renderer can use
+          const prods = data.products.map(p => ({
+            title: p.title, 
+            price: p.price, 
+            tags: p.vibe_tags || p.tags || '', 
+            image: p.image_url || p.image || 'https://placehold.co/400x400/fff/ccc?text=No+Image'
+          }));
+          renderProducts(prods);
+        } else {
+          renderProducts([]);
+        }
+      }catch(err){
+        console.error('Error fetching results:', err);
+        grid.innerHTML = '<div style="text-align:center; padding: 20px;">Error fetching products. Please ensure the backend server is running.</div>';
+      } finally {
+        btn.innerText = prev; 
+        btn.disabled = false;
+      }
+    }
+
+    function triggerSearch(){
+      const q = document.getElementById('mainSearch').value;
+      document.getElementById('vibeInput').value = q;
+      submitVibe();
+      window.location.hash = '#vibe';
+    }
+
+    // --- Load trends and featured products from the backend ---
+    async function loadTrends(){
+      const chipsArea = document.getElementById('chipsArea');
+      chipsArea.innerHTML = '<div class="loading-spinner" style="display:block;"></div>';
+
+      // Fetch trending vibes
+      try {
+        const trendsRes = await fetch(BACKEND_URL + '/trending');
+        const trendsData = await trendsRes.json();
+        if(trendsData && trendsData.trending_vibes) {
+          renderChips(trendsData.trending_vibes.slice(0, 5));
+        }
+      } catch(err) {
+        console.error('Error fetching trending vibes:', err);
+        chipsArea.innerHTML = '<div class="muted">Failed to load trends.</div>';
+      }
+
+      // Fetch featured products (using a popular vibe as a query)
+      try {
+        const featuredRes = await fetch(BACKEND_URL + '/search/vibe-hybrid', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({vibe: 'minimalist', max_results: 4})
+        });
+        const featuredData = await featuredRes.json();
+        if(featuredData && featuredData.products) {
+          const prods = featuredData.products.map(p => ({
+            title: p.title, 
+            price: p.price, 
+            tags: p.vibe_tags || p.tags || '', 
+            image: p.image_url || p.image || 'https://placehold.co/400x400/fff/ccc?text=No+Image'
+          }));
+          renderFeatured(prods);
+        }
+      } catch(err) {
+        console.error('Error fetching featured products:', err);
+        document.getElementById('featuredRow').innerHTML = '<div class="muted">Failed to load featured products.</div>';
+      }
+    }
+
+    // Initial page load: load trends and an initial search result
+    document.addEventListener('DOMContentLoaded', () => {
+      loadTrends();
+      // Perform an initial vibe search for "bohemian" to populate the grid
+      document.getElementById('vibeInput').value = 'bohemian';
+      submitVibe();
+    });
+
+    // --- image upload preview (no server call) ---
+    function previewUpload(e){
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev)=>{
+        // show first product grid replaced by uploaded image (demo)
+        const preview = {id:999, title:"Your inspiration image", price:"", tags:"inspiration", image:ev.target.result};
+        renderProducts([preview]);
+      }
+      reader.readAsDataURL(file);
+    }
+  </script>
+</body>
+</html>
