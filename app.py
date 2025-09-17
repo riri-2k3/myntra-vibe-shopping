@@ -2,22 +2,22 @@ import os
 import logging
 import time
 import pandas as pd
-import numpy as np
 import json
 import re
 from typing import List, Optional, Dict, Any
 from contextlib import asynccontextmanager
 import random
+import math
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import google.generativeai as genai
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
-from dotenv import load_dotenv
+from PIL import Image
+import io
 
 # Load environment variables
+from dotenv import load_dotenv
 load_dotenv()
 
 # Configure enhanced logging
@@ -63,63 +63,6 @@ class QuizRecommendationResponse(BaseModel):
     secondary_vibe: str
     reasoning: str
 
-class EnhancedVibeSearcher:
-    """Enhanced vibe searcher with aesthetic understanding."""
-    
-    def __init__(self):
-        self.aesthetic_vocabulary = {}
-        self.cultural_references = {}
-        self.load_aesthetic_knowledge()
-    
-    def load_aesthetic_knowledge(self):
-        """Load aesthetic vocabulary and cultural references."""
-        try:
-            if os.path.exists('aesthetic_vocabulary.json'):
-                with open('aesthetic_vocabulary.json', 'r') as f:
-                    self.aesthetic_vocabulary = json.load(f)
-                logger.info("✅ Loaded aesthetic vocabulary")
-            else:
-                self.aesthetic_vocabulary = {
-                    'dark academia': ['vintage', 'classic', 'scholarly', 'tweed', 'library', 'books', 'gothic', 'romantic academia'],
-                    'cottagecore': ['rural', 'pastoral', 'vintage floral', 'cozy', 'handmade', 'rustic', 'cottage', 'farmhouse'],
-                    'y2k': ['futuristic', 'metallic', 'cyber', 'holographic', 'tech', 'millennium', 'digital', 'space age'],
-                    'minimalist': ['clean', 'simple', 'neutral', 'basic', 'essential', 'uncluttered', 'modern', 'sleek'],
-                    'grunge': ['edgy', 'distressed', 'alternative', 'punk', 'rebellious', 'vintage denim', 'band tees'],
-                    'soft girl': ['pastel', 'cute', 'kawaii', 'blush', 'feminine', 'dreamy', 'innocent', 'sweet'],
-                    'indie sleaze': ['vintage', 'thrifted', 'eclectic', 'artsy', 'bohemian', 'creative', 'unconventional'],
-                    'coquette': ['feminine', 'romantic', 'delicate', 'bows', 'lace', 'girly', 'pretty', 'dainty']
-                }
-                logger.info("⚠️ Using fallback aesthetic vocabulary")
-                
-            self.cultural_references = {
-                'priyanka chopra barfi': ['vintage', 'retro bollywood', 'classic indian', 'colorful traditional'],
-                'taylor swift folklore': ['cottagecore', 'indie folk', 'nature', 'cozy cabin', 'cardigans'],
-                'audrey hepburn': ['classic elegant', 'vintage chic', 'timeless', 'little black dress'],
-                'french girl': ['effortless chic', 'minimalist', 'neutral tones', 'classic pieces'],
-                'rachel green friends': ['90s preppy', 'layered looks', 'casual chic', 'vintage 90s']
-            }
-            
-        except Exception as e:
-            logger.error(f"Error loading aesthetic knowledge: {e}")
-    
-    def expand_query(self, query: str) -> str:
-        """Expand query with aesthetic and cultural understanding."""
-        query_lower = query.lower()
-        expanded_terms = [query]
-        
-        for aesthetic, keywords in self.aesthetic_vocabulary.items():
-            if aesthetic in query_lower:
-                expanded_terms.extend(keywords[:3])
-        
-        for reference, keywords in self.cultural_references.items():
-            if any(word in query_lower for word in reference.split()):
-                expanded_terms.extend(keywords)
-        
-        if any(word in query_lower for word in ['movie', 'character', 'era', 'style of']):
-            expanded_terms.extend(['vintage', 'classic', 'iconic', 'aesthetic'])
-        
-        return ' '.join(expanded_terms)
-
 # Configure Gemini AI with enhanced error handling
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_AVAILABLE = False
@@ -147,65 +90,121 @@ else:
 # Global dictionary to store models and data
 MODELS = {}
 
-def _get_top_score(ml_results: List[Dict[str, Any]]) -> float:
-    if not ml_results:
+def clean_float_value(value):
+    """Clean float values to ensure JSON compliance"""
+    if pd.isna(value) or (isinstance(value, float) and (math.isnan(value) or math.isinf(value))):
         return 0.0
-    return max([r['similarity_score'] for r in ml_results])
+    return float(value)
 
-def _run_enhanced_ml_search(request: VibeSearchRequest):
-    """
-    Enhanced ML-based semantic search with aesthetic understanding.
-    """
+def clean_product_data(products_list):
+    """Clean all product data to ensure JSON compliance"""
+    cleaned_products = []
+    for product in products_list:
+        cleaned_product = {}
+        for key, value in product.items():
+            if isinstance(value, float):
+                cleaned_product[key] = clean_float_value(value)
+            elif pd.isna(value) if hasattr(pd, 'isna') else value is None:
+                cleaned_product[key] = "" if key in ['title', 'description', 'category', 'vibe_tags'] else 0
+            else:
+                cleaned_product[key] = value
+        cleaned_products.append(cleaned_product)
+    return cleaned_products
+
+def load_products():
+    """Load product data from CSV"""
     try:
-        model = MODELS['sentence_model']
-        product_embeddings = MODELS['product_embeddings']
-        df_products = MODELS['df_products']
-        vibe_searcher = MODELS['vibe_searcher']
-
-        expanded_query = vibe_searcher.expand_query(request.vibe)
-        logger.info(f"🔍 Original query: '{request.vibe}' → Expanded: '{expanded_query}'")
-
-        query_embedding = model.encode([expanded_query], convert_to_tensor=True).detach().cpu().numpy()
-        similarities = cosine_similarity(query_embedding, product_embeddings)
-        
-        filtered_indices = []
-        for idx in range(len(df_products)):
-            product = df_products.iloc[idx]
+        data_file = 'products_enhanced_corpus.csv'
+        if os.path.exists(data_file):
+            products_df = pd.read_csv(data_file)
+            products_list = products_df.to_dict('records')
+            products_list = clean_product_data(products_list)
             
-            if request.price_min is not None and product['price'] < request.price_min:
-                continue
-            if request.price_max is not None and product['price'] > request.price_max:
-                continue
+            for i, product in enumerate(products_list):
+                if 'id' not in product or pd.isna(product['id']):
+                    product['id'] = i + 1
             
-            if request.category and request.category.lower() != 'all' and product['category'].lower() != request.category.lower():
-                continue
-                
-            filtered_indices.append(idx)
-        
-        if not filtered_indices:
-            logger.warning("⚠️ ML search returned no products after filtering.")
-            return []
-        
-        filtered_similarities = similarities[0, filtered_indices]
-        top_n = min(request.max_results, len(filtered_indices))
-        top_indices_in_filtered = np.argsort(filtered_similarities)[-top_n:][::-1]
-        top_indices = [filtered_indices[i] for i in top_indices_in_filtered]
-        
-        results = []
-        for index in top_indices:
-            product_info = df_products.iloc[index].to_dict()
-            product_info['similarity_score'] = float(similarities[0][index])
-            results.append(product_info)
-        
-        return results
+            logger.info(f"✅ Loaded {len(products_list)} products from CSV")
+            return products_list
+        else:
+            raise FileNotFoundError(f"{data_file} not found")
     except Exception as e:
-        logger.error(f"❌ Enhanced ML Search Error: {str(e)}")
-        return None
+        logger.error(f"❌ Failed to load product data: {str(e)}")
+        return []
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Loads product data on application startup."""
+    logger.info("🚀 Starting Enhanced Vibe Search API...")
+    MODELS['products_list'] = load_products()
+    yield
+    logger.info("🛑 Shutting down Enhanced Vibe Search API...")
+    MODELS.clear()
+
+app = FastAPI(
+    title="Enhanced Vibe Search API", 
+    version="5.0.0",
+    description="An enhanced hybrid search engine with Gemini, featuring aesthetic and cultural understanding.",
+    lifespan=lifespan
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+def advanced_text_match(vibe: str, products: list, max_results: int = 12):
+    """Advanced text matching with improved scoring"""
+    vibe_lower = vibe.lower()
+    vibe_words = vibe_lower.split()
+    
+    style_keywords = {
+        'cottagecore': ['floral', 'vintage', 'romantic', 'feminine', 'natural', 'peasant', 'embroidered'],
+        'dark academia': ['blazer', 'formal', 'sophisticated', 'vintage', 'intellectual', 'tweed', 'plaid'],
+        'y2k': ['crop', 'platform', 'chunky', 'metallic', 'edgy', 'holographic', 'futuristic'],
+        'minimalist': ['clean', 'simple', 'basic', 'neutral', 'white', 'minimal'],
+        'grunge': ['oversized', 'denim', 'combat', 'flannel', 'alternative', 'distressed'],
+        'boho': ['flowing', 'ethnic', 'patterns', 'kimono', 'festival', 'bohemian'],
+        'coquette': ['pink', 'pearl', 'feminine', 'romantic', 'delicate', 'bow'],
+        'streetwear': ['urban', 'casual', 'sporty', 'hoodie', 'sneakers', 'logo']
+    }
+    
+    scored_products = []
+    
+    for product in products:
+        score = 0
+        searchable_text = f"{product.get('title', '')} {product.get('description', '')} {product.get('vibe_tags', '')}".lower()
+        
+        for word in vibe_words:
+            if len(word) > 2 and word in searchable_text:
+                score += 3
+        
+        for style, keywords in style_keywords.items():
+            if style in vibe_lower:
+                for keyword in keywords:
+                    if keyword in searchable_text:
+                        score += 4
+        
+        color_words = ['pastel', 'bright', 'dark', 'neutral', 'black', 'white', 'pink', 'blue', 'red', 'green', 'brown', 'navy']
+        for color in color_words:
+            if color in vibe_lower and color in searchable_text:
+                score += 2
+        
+        if vibe_lower in searchable_text:
+            score += 10
+        
+        if score > 0:
+            product['similarity_score'] = score
+            scored_products.append((score, product))
+    
+    scored_products.sort(key=lambda x: x[0], reverse=True)
+    return [product for _, product in scored_products[:max_results]]
 
 def _run_enhanced_gemini_search(request: VibeSearchRequest, products: list):
-    """
-    Enhanced Gemini API search with better cultural understanding.
-    """
+    """Enhanced Gemini API search with better cultural understanding."""
     try:
         if not GEMINI_AVAILABLE or not model_gemini:
             return None
@@ -222,10 +221,7 @@ def _run_enhanced_gemini_search(request: VibeSearchRequest, products: list):
             return []
         
         sample_size = min(50, len(filtered_products))
-        if len(filtered_products) >= sample_size:
-            sampled_products = random.sample(filtered_products, sample_size)
-        else:
-            sampled_products = filtered_products
+        sampled_products = random.sample(filtered_products, sample_size)
         
         product_descriptions = "\n".join([
             f"ID: {p['id']}, Title: {p['title']}, Description: {p.get('description', '')[:100]}, "
@@ -233,29 +229,26 @@ def _run_enhanced_gemini_search(request: VibeSearchRequest, products: list):
             for p in sampled_products
         ])
         
+        # New, more powerful prompt
         prompt = f"""
-        User is searching for: "{request.vibe}"
-        
-        This could be:
-        - A fashion aesthetic (like "dark academia", "cottagecore")
-        - A cultural reference (like "Priyanka Chopra in Barfi", "Taylor Swift folklore era")
-        - A movie/character style reference
-        - A lifestyle or personality-based fashion query
-        
-        From the following products, identify the top {min(request.max_results, len(sampled_products))} that best match this vibe/aesthetic:
-        
-        {product_descriptions}
-        
-        Consider:
-        - Visual aesthetics and style elements
-        - Color palettes and patterns
-        - Cultural and historical context
-        - Lifestyle associations
-        - Emotional/mood connections
-        
-        Respond with ONLY the Product IDs (numbers) separated by commas, ordered by relevance.
-        Example: 123, 456, 789
-        """
+You are an expert fashion curator specializing in aesthetic-based product discovery, like Pinterest's visual search but for fashion vibes.
+
+User is searching for: "{vibe}"
+
+Here are the available products:
+{product_context}
+
+Instructions:
+1. Analyze the vibe "{vibe}" and understand its key aesthetic elements
+2. Select the {min(max_results, 15)} product IDs that BEST match this specific vibe
+3. Consider: style, colors, textures, mood, cultural references, and overall aesthetic feeling
+4. Prioritize products that authentically represent the vibe over generic matches
+5. For aesthetic vibes like "dark academia", "cottagecore", "grunge", etc., be very specific about matching authentic pieces
+
+Respond with ONLY a comma-separated list of product IDs (numbers only).
+Example format: 1,5,8,12,15,23,29,34,41,45,52,58
+
+Product IDs only:"""
         
         response = model_gemini.generate_content(prompt)
         response_text = response.text.strip().replace(' ', '')
@@ -277,113 +270,45 @@ def _run_enhanced_gemini_search(request: VibeSearchRequest, products: list):
         logger.error(f"❌ Enhanced Gemini Search Error: {str(e)}")
         return None
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """
-    Loads the enhanced ML model and product data on application startup.
-    """
-    logger.info("🚀 Starting Enhanced Vibe Search API...")
-    
-    enhanced_data_file = 'products_enhanced_corpus.csv'
-    enhanced_embeddings_file = 'product_embeddings_enhanced.npy'
-    fallback_data_file = 'products_with_corpus.csv'
-    fallback_embeddings_file = 'product_embeddings.npy'
-    
-    try:
-        if os.path.exists(enhanced_data_file) and os.path.exists(enhanced_embeddings_file):
-            logger.info("📊 Loading enhanced model data...")
-            MODELS['df_products'] = pd.read_csv(enhanced_data_file)
-            MODELS['product_embeddings'] = np.load(enhanced_embeddings_file)
-            corpus_column = 'enhanced_corpus'
-            logger.info("✅ Enhanced model data loaded successfully")
-        
-        elif os.path.exists(fallback_data_file) and os.path.exists(fallback_embeddings_file):
-            logger.info("📊 Loading fallback model data...")
-            MODELS['df_products'] = pd.read_csv(fallback_data_file)
-            MODELS['product_embeddings'] = np.load(fallback_embeddings_file)
-            corpus_column = 'corpus'
-            logger.info("⚠️ Using fallback model data")
-        
-        else:
-            raise FileNotFoundError("No model data files found")
-        
-        MODELS['sentence_model'] = SentenceTransformer('vibe_search_model_tuned')
-        MODELS['vibe_searcher'] = EnhancedVibeSearcher()
-        MODELS['products_list'] = MODELS['df_products'].to_dict('records')
-        
-        logger.info(f"✅ Loaded {len(MODELS['df_products'])} products with enhanced search capabilities")
-        
-    except Exception as e:
-        logger.error(f"❌ Failed to load model data: {str(e)}")
-        MODELS.clear()
-    
-    yield
-    
-    logger.info("🛑 Shutting down Enhanced Vibe Search API...")
-    MODELS.clear()
-
-app = FastAPI(
-    title="Enhanced Vibe Search API", 
-    version="5.0.0",
-    description="An enhanced hybrid search engine with ML and Gemini fallback, featuring aesthetic and cultural understanding.",
-    lifespan=lifespan
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-@app.post("/search/vibe-hybrid", response_model=Dict[str, Any])
+@app.post("/search/vibe", response_model=Dict[str, Any])
 def vibe_search_hybrid(request: VibeSearchRequest):
     """
-    Performs an enhanced hybrid search with aesthetic and cultural understanding.
+    Performs a hybrid search using the Gemini API and text matching as a fallback.
     """
     search_start_time = time.time()
-    fallback_threshold = 0.25
+    
+    products_list = MODELS.get('products_list', [])
+    if not products_list:
+        raise HTTPException(status_code=500, detail="Product data not loaded.")
 
-    ml_results = None
-    if 'sentence_model' in MODELS and 'product_embeddings' in MODELS:
-        logger.info(f"🔍 Searching for vibe: '{request.vibe}' with ML model...")
-        ml_results = _run_enhanced_ml_search(request)
-    
-    if ml_results is not None:
-        top_score = _get_top_score(ml_results)
-        logger.info(f"📊 ML search top score: {top_score:.3f} (threshold: {fallback_threshold})")
-        
-        if top_score > fallback_threshold:
-            total_time = round((time.time() - search_start_time) * 1000, 2)
-            logger.info(f"✅ Enhanced ML Search successful. Time: {total_time}ms")
-            return {
-                "products": ml_results,
-                "message": f"Found {len(ml_results)} matches using Enhanced ML Search!",
-                "search_method": "Enhanced ML Semantic Search",
-                "search_time_ms": total_time,
-                "top_similarity_score": top_score
-            }
+    # Try Gemini AI search first
+    gemini_results = None
+    if GEMINI_AVAILABLE:
+        gemini_results = _run_enhanced_gemini_search(request, products_list)
 
-    if ml_results is None:
-        fallback_reason = "ML model or data not loaded"
-    else:
-        fallback_reason = f"ML score too low: {_get_top_score(ml_results):.3f}"
-        
-    logger.warning(f"⚠️ ML search failed or low confidence. Falling back to Enhanced Gemini. Reason: {fallback_reason}")
-    
-    gemini_results = _run_enhanced_gemini_search(request, MODELS.get('products_list', []))
-    
     total_time = round((time.time() - search_start_time) * 1000, 2)
     
-    if gemini_results:
+    if gemini_results and len(gemini_results) > 0:
         logger.info(f"✅ Enhanced Gemini Search successful. Time: {total_time}ms")
         return {
             "products": gemini_results,
-            "message": f"Found {len(gemini_results)} matches using Enhanced Gemini Search!",
-            "search_method": "Enhanced Gemini Cultural Search",
+            "message": f"AI found {len(gemini_results)} items perfectly matching your vibe! ✨",
+            "search_method": "Gemini AI",
             "search_time_ms": total_time,
-            "fallback_reason": fallback_reason
+        }
+
+    # Fallback to advanced text matching
+    logger.info("➡️ Falling back to Advanced Text Matching.")
+    text_results = advanced_text_match(request.vibe, products_list, request.max_results)
+    
+    total_time = round((time.time() - search_start_time) * 1000, 2)
+
+    if text_results:
+        return {
+            "products": text_results,
+            "message": f"Found {len(text_results)} items matching your vibe using text matching.",
+            "search_method": "Text Matching Fallback",
+            "search_time_ms": total_time,
         }
     
     return {
@@ -391,82 +316,6 @@ def vibe_search_hybrid(request: VibeSearchRequest):
         "message": "No products found. Try a different query or check your filters!",
         "search_method": "Failed",
         "search_time_ms": total_time,
-        "debug_info": f"ML search failed. Gemini fallback also failed. Reason: {fallback_reason}"
-    }
-
-@app.get("/debug/search/{query}")
-def debug_search(query: str):
-    """Debug endpoint to test search with detailed information."""
-    if 'vibe_searcher' not in MODELS:
-        return {"error": "Vibe searcher not loaded"}
-    
-    vibe_searcher = MODELS['vibe_searcher']
-    expanded_query = vibe_searcher.expand_query(query)
-    
-    request = VibeSearchRequest(vibe=query, max_results=5)
-    
-    debug_info = {
-        "original_query": query,
-        "expanded_query": expanded_query,
-        "ml_available": 'sentence_model' in MODELS,
-        "gemini_available": GEMINI_AVAILABLE
-    }
-    
-    if 'sentence_model' in MODELS:
-        ml_results = _run_enhanced_ml_search(request)
-        if ml_results:
-            debug_info["ml_top_score"] = max([r['similarity_score'] for r in ml_results])
-            debug_info["ml_results_count"] = len(ml_results)
-            debug_info["ml_top_3_titles"] = [r['title'] for r in ml_results[:3]]
-    
-    if GEMINI_AVAILABLE:
-        gemini_results = _run_enhanced_gemini_search(request, MODELS.get('products_list', []))
-        if gemini_results:
-            debug_info["gemini_results_count"] = len(gemini_results)
-            debug_info["gemini_top_3_titles"] = [r['title'] for r in gemini_results[:3]]
-    
-    return debug_info
-
-@app.get("/evaluate/test-queries")
-def evaluate_test_queries():
-    """Evaluate the system on a set of test queries."""
-    if 'sentence_model' not in MODELS:
-        return {"error": "Model not loaded"}
-    
-    test_queries = [
-        "priyanka chopra in barfi",
-        "cottagecore aesthetic", 
-        "dark academia style",
-        "taylor swift folklore era",
-        "french girl minimalist",
-        "90s grunge outfit",
-        "audrey hepburn breakfast at tiffanys",
-        "soft girl kawaii",
-        "y2k futuristic",
-        "indie sleaze vintage"
-    ]
-    
-    results = {}
-    
-    for query in test_queries:
-        request = VibeSearchRequest(vibe=query, max_results=3)
-        
-        ml_results = _run_enhanced_ml_search(request)
-        ml_score = max([r['similarity_score'] for r in ml_results]) if ml_results else 0
-        
-        results[query] = {
-            "ml_top_score": ml_score,
-            "ml_results_count": len(ml_results) if ml_results else 0,
-            "ml_top_result": ml_results[0]['title'] if ml_results else "No results"
-        }
-    
-    avg_score = np.mean(list(results.values()))
-    
-    return {
-        "results": results,
-        "average_ml_score": avg_score,
-        "fallback_threshold": 0.25,
-        "queries_above_threshold": sum(1 for r in results.values() if r['ml_top_score'] > 0.25)
     }
 
 @app.get("/")
@@ -474,18 +323,16 @@ def root():
     return {
         "message": "Enhanced Vibe Search API v5.0 - Cultural & Aesthetic Understanding",
         "status": "running",
-        "search_method": "Enhanced ML + Enhanced Gemini",
-        "features": ["Cultural References", "Aesthetic Vocabulary", "Query Expansion"]
+        "search_method": "Enhanced Gemini",
+        "features": ["Cultural References", "Aesthetic Vocabulary"]
     }
 
 @app.get("/health")
 def health_check():
     return {
         "status": "healthy",
-        "ml_model_loaded": 'sentence_model' in MODELS,
-        "enhanced_data_loaded": 'vibe_searcher' in MODELS,
         "gemini_available": GEMINI_AVAILABLE,
-        "products_count": len(MODELS.get('df_products', [])),
+        "products_count": len(MODELS.get('products_list', [])),
         "timestamp": time.time()
     }
 
@@ -500,16 +347,14 @@ def get_trending():
 
 @app.get("/categories")
 def get_categories():
-    if 'df_products' in MODELS:
-        categories = MODELS['df_products']['category'].unique().tolist()
-        return {"categories": sorted(categories)}
+    if 'products_list' in MODELS:
+        categories = set(p.get('category') for p in MODELS['products_list'] if p.get('category'))
+        return {"categories": sorted(list(categories))}
     return {"categories": []}
 
 @app.get("/quiz/generate", response_model=QuizQuestionsResponse)
 def generate_quiz_questions():
-    """
-    Generates a set of 5 quiz questions using the Gemini API.
-    """
+    """Generates a set of 5 quiz questions using the Gemini API."""
     if not GEMINI_AVAILABLE or not model_gemini:
         raise HTTPException(status_code=503, detail="Gemini API is not available.")
 
@@ -545,9 +390,7 @@ def generate_quiz_questions():
 
 @app.post("/quiz/recommendation", response_model=QuizRecommendationResponse)
 def quiz_recommendation(request: QuizAnswersRequest):
-    """
-    Generates a fashion vibe recommendation based on quiz answers using the Gemini API.
-    """
+    """Generates a fashion vibe recommendation based on quiz answers using the Gemini API."""
     if not GEMINI_AVAILABLE or not model_gemini:
         raise HTTPException(status_code=503, detail="Gemini API is not available.")
 
@@ -584,6 +427,60 @@ def quiz_recommendation(request: QuizAnswersRequest):
         logger.error(f"Error getting quiz recommendation from Gemini: {e}")
         raise HTTPException(status_code=500, detail="Failed to get quiz recommendation.")
 
+@app.post("/search/image")
+async def image_vibe_search(
+    file: UploadFile = File(...), 
+    additional_text: str = Form("")
+):
+    """Search products based on uploaded image + optional text using Gemini."""
+    try:
+        logger.info(f"📸 Processing image upload: {file.filename}")
+        
+        image_data = await file.read()
+        image_pil = Image.open(io.BytesIO(image_data))
+        
+        if not GEMINI_AVAILABLE or not model_gemini:
+            raise HTTPException(status_code=503, detail="Gemini AI is not available for image search.")
+
+        # Multimodal prompt with image and text
+        prompt_parts = [
+            image_pil,
+            f"You are a fashion stylist. Based on this image, what are the key clothing elements, colors, and overall fashion aesthetic? List the top 10 most relevant products from the following catalog that match this vibe. {additional_text}",
+            "\n\nProduct Catalog (IDs, Titles, Tags):\n"
+        ]
+        
+        products_list = MODELS.get('products_list', [])
+        
+        # Add products to the prompt to ground the response
+        for product in random.sample(products_list, min(50, len(products_list))):
+            prompt_parts.append(f"ID:{product['id']}, Title:{product['title']}, Vibe Tags:{product.get('vibe_tags', '')}\n")
+        
+        prompt_parts.append("\n\nRespond with only the comma-separated product IDs (no explanations): 1,3,5,2")
+
+        response = await model_gemini.generate_content(prompt_parts, stream=False)
+        
+        product_ids = [int(id_str) for id_str in re.findall(r'\b\d+\b', response.text.strip())]
+        
+        matched_products = []
+        for pid in product_ids:
+            product = next((p for p in products_list if p['id'] == pid), None)
+            if product:
+                product['similarity_score'] = 0.9 # High score for AI-matched items
+                matched_products.append(product)
+        
+        return {
+            "products": matched_products,
+            "message": f"Found {len(matched_products)} items with a similar style based on your image! 📸",
+            "search_method": "Gemini AI Image Search"
+        }
+    
+    except Exception as e:
+        logger.error(f"❌ Error in image_vibe_search: {e}")
+        raise HTTPException(status_code=500, detail="Error processing image search")
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    print("🚀 Starting Myntra Vibe Shopping API...")
+    print("API will be available at: http://localhost:8000")
+    print("API docs at: http://localhost:8000/docs")
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")

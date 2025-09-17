@@ -701,7 +701,7 @@ header.nav {
       btn.disabled = true;
 
       try{
-        const res = await fetch(BACKEND_URL + '/search/vibe-hybrid', {
+        const res = await fetch(BACKEND_URL + '/search/vibe', {
           method:'POST',
           headers:{'Content-Type':'application/json'},
           body: JSON.stringify({vibe: vibeText, max_results: 9})
