@@ -759,7 +759,7 @@ header.nav {
 
       // Fetch featured products (using a popular vibe as a query)
       try {
-        const featuredRes = await fetch(BACKEND_URL + '/search/vibe-hybrid', {
+        const featuredRes = await fetch(BACKEND_URL + '/search/vibe', {
           method:'POST',
           headers:{'Content-Type':'application/json'},
           body: JSON.stringify({vibe: 'minimalist', max_results: 4})
