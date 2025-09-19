@@ -683,55 +683,62 @@ header.nav {
 
     // --- Vibe search function that calls the backend API ---
     async function submitVibe(){
-      const vibeText = document.getElementById('vibeInput').value.trim();
-      if(!vibeText){
-        const grid = document.getElementById('resultsGrid');
-        grid.innerHTML = '<div style="text-align:center; padding: 20px;">Please enter a vibe to search.</div>';
-        console.error('Please enter a vibe (e.g., "cozy cottagecore picnic")');
-        return;
-      }
+  const vibeText = document.getElementById('vibeInput').value.trim();
+  if(!vibeText){
+    const grid = document.getElementById('resultsGrid');
+    grid.innerHTML = '<div style="text-align:center; padding: 20px;">Please enter a vibe to search.</div>';
+    console.error('Please enter a vibe (e.g., "cozy cottagecore picnic")');
+    return;
+  }
 
-      // Show loading spinner
-      const grid = document.getElementById('resultsGrid');
-      grid.innerHTML = '<div class="loading-spinner" style="display:block;"></div>';
-      
-      const btn = document.querySelector('.vibe-card .search-btn');
-      const prev = btn.innerText;
-      btn.innerText = 'Searching...'; 
-      btn.disabled = true;
+  // Show loading spinner
+  const grid = document.getElementById('resultsGrid');
+  grid.innerHTML = '<div class="loading-spinner" style="display:block;"></div>';
+  
+  const btn = document.querySelector('.vibe-card .search-btn');
+  const prev = btn.innerText;
+  btn.innerText = 'Searching...'; 
+  btn.disabled = true;
 
-      try{
-        const res = await fetch(BACKEND_URL + '/search/vibe', {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({vibe: vibeText, max_results: 9})
-        });
-        
-        if (!res.ok) {
-          throw new Error(`HTTP error! Status: ${res.status}`);
-        }
-        
-        const data = await res.json();
-        if(data && data.products) {
-          // Map backend product data to a format the renderer can use
-          const prods = data.products.map(p => ({
-            title: p.title, 
-            price: p.price, 
-            tags: p.vibe_tags || p.tags || '', 
-            image: p.image_url || p.image || 'https://placehold.co/400x400/fff/ccc?text=No+Image'
-          }));
-          renderProducts(prods);
-        } else {
-          renderProducts([]);
-        }
-      }catch(err){
-        console.error('Error fetching results:', err);
-        grid.innerHTML = '<div style="text-align:center; padding: 20px;">Error fetching products. Please ensure the backend server is running.</div>';
-      } finally {
-        btn.innerText = prev; 
-        btn.disabled = false;
-      }
+  try{
+    const res = await fetch(BACKEND_URL + '/search/vibe', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({vibe: vibeText, max_results: 9})
+    });
+    
+    if (!res.ok) {
+      throw new Error(`HTTP error! Status: ${res.status}`);
+      console.log('Backend server error:', res.statusText);
     }
+    
+    const data = await res.json();
+    console.log('Received data:', data);
+    if(data && data.products) {
+      // Map backend product data to a format the renderer can use
+      const prods = data.products.map(p => {
+        // Correctly handle vibe_tags by converting the array to a string
+        const tags = Array.isArray(p.vibe_tags) ? p.vibe_tags.join(', ') : p.vibe_tags;
+        
+        return {
+          title: p.title, 
+          price: p.price, 
+          tags: p.vibe_tags || p.tags || '',  // Use the new string variable here
+          image: p.image_url || p.image || 'https://placehold.co/400x400/fff/ccc?text=No+Image'
+        };
+      });
+      renderProducts(prods);
+    } else {
+      renderProducts([]);
+    }
+  }catch(err){
+    console.error('Error fetching results:', err);
+    grid.innerHTML = '<div style="text-align:center; padding: 20px;">Error fetching products. Please ensure the backend server is running.</div>';
+  } finally {
+    btn.innerText = prev; 
+    btn.disabled = false;
+  }
+}
 
     function triggerSearch(){
       const q = document.getElementById('mainSearch').value;
@@ -779,6 +786,23 @@ header.nav {
         document.getElementById('featuredRow').innerHTML = '<div class="muted">Failed to load featured products.</div>';
       }
     }
+
+    async function searchByImage() {
+  const fileInput = document.getElementById("imageInput");
+  if (!fileInput.files.length) return alert("Please upload an image!");
+
+  const formData = new FormData();
+  formData.append("file", fileInput.files[0]);
+
+  const response = await fetch(`${API_BASE}/search/image`, {
+    method: "POST",
+    body: formData
+  });
+  
+  const data = await response.json();
+  renderProducts(data.products);
+}
+
 
     // Initial page load: load trends and an initial search result
     document.addEventListener('DOMContentLoaded', () => {
