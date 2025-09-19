@@ -129,6 +129,60 @@ except FileNotFoundError:
             "image_url": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=400",
             "category": "bottoms",
             "vibe_tags": "vintage, retro, high-waist, denim, classic",
+        },
+        {
+            "id": 7,
+            "title": "Elegant Evening Gown",
+            "description": "Sophisticated black evening gown with sequin details",
+            "price": 8999.0,
+            "image_url": "https://images.unsplash.com/photo-1566479179817-c8f6e5d9b5aa?w=400",
+            "category": "dresses",
+            "vibe_tags": "elegant, formal, evening, sophisticated, sequin, black",
+        },
+        {
+            "id": 8,
+            "title": "Festive Silk Saree",
+            "description": "Traditional silk saree with gold border for festivals",
+            "price": 12999.0,
+            "image_url": "https://images.unsplash.com/photo-1583391733956-6c78276477e1?w=400",
+            "category": "ethnic",
+            "vibe_tags": "traditional, festive, silk, elegant, indian, gold",
+        },
+        {
+            "id": 9,
+            "title": "Casual Cotton Kurta",
+            "description": "Comfortable cotton kurta for everyday wear",
+            "price": 1299.0,
+            "image_url": "https://images.unsplash.com/photo-1603252109303-2751441dd157?w=400",
+            "category": "ethnic",
+            "vibe_tags": "casual, comfortable, cotton, traditional, everyday",
+        },
+        {
+            "id": 10,
+            "title": "Designer Lehenga",
+            "description": "Embroidered designer lehenga for weddings",
+            "price": 25999.0,
+            "image_url": "https://images.unsplash.com/photo-1594736797933-d0401ba2fe65?w=400",
+            "category": "ethnic",
+            "vibe_tags": "wedding, designer, embroidered, traditional, bridal",
+        },
+        {
+            "id": 11,
+            "title": "Casual Sneakers",
+            "description": "Comfortable white sneakers for daily wear",
+            "price": 2999.0,
+            "image_url": "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400",
+            "category": "shoes",
+            "vibe_tags": "casual, comfortable, white, sneakers, daily",
+        },
+        {
+            "id": 12,
+            "title": "Party Crop Top",
+            "description": "Sparkly crop top perfect for parties",
+            "price": 1599.0,
+            "image_url": "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=400",
+            "category": "tops",
+            "vibe_tags": "party, sparkly, crop, trendy, nightlife",
         }
     ]
 
@@ -138,6 +192,13 @@ except FileNotFoundError:
 
 class VibeSearchRequest(BaseModel):
     vibe: str
+    max_results: Optional[int] = 12
+    price_min: Optional[float] = None
+    price_max: Optional[float] = None
+    category: Optional[str] = None
+
+class LocationEventRequest(BaseModel):
+    location: str
     max_results: Optional[int] = 12
     price_min: Optional[float] = None
     price_max: Optional[float] = None
@@ -281,6 +342,121 @@ def _fallback_keyword_search(request: VibeSearchRequest, products: list):
     scored_products.sort(key=lambda x: x['similarity_score'], reverse=True)
     return scored_products[:request.max_results]
 
+def _analyze_location_events(location: str):
+    """
+    Use Gemini AI to analyze location and determine local events/festivals
+    """
+    try:
+        if not GEMINI_AVAILABLE or not model_gemini:
+            logger.warning("⚠️ Gemini not available for location analysis")
+            return {"events": [], "dress_codes": ["casual"], "error": "AI analysis not available"}
+        
+        prompt = f"""
+You are a cultural events and fashion expert specializing in Indian locations and festivities.
+
+Location: "{location}"
+
+Your task:
+1. Identify the location (city, state, region in India)
+2. Determine current/upcoming festivals, events, or cultural celebrations specific to this location
+3. Consider seasonal events, local traditions, religious festivals, cultural programs
+4. Suggest appropriate dress codes and fashion styles for these events
+
+Focus on:
+- Regional festivals (like Durga Puja in Bengal, Ganesh Chaturthi in Maharashtra, Onam in Kerala)
+- Local cultural events and fairs
+- Seasonal celebrations
+- Wedding seasons
+- Religious observances
+- Modern events (concerts, parties, exhibitions)
+
+Respond ONLY in valid JSON format:
+{{
+  "location_info": {{
+    "city": "city_name",
+    "state": "state_name",
+    "region": "region_description"
+  }},
+  "events": [
+    {{
+      "name": "event_name",
+      "type": "festival/cultural/religious/modern",
+      "description": "brief_description",
+      "dress_code": "traditional/semi-formal/casual/ethnic",
+      "style_keywords": ["keyword1", "keyword2", "keyword3"]
+    }}
+  ],
+  "recommended_styles": ["style1", "style2", "style3"],
+  "seasonal_note": "seasonal_context"
+}}
+"""
+
+        response = model_gemini.generate_content(prompt)
+        response_text = response.text.strip()
+        
+        # Parse JSON response
+        try:
+            # Extract JSON from response
+            json_match = re.search(r'\{[\s\S]*\}', response_text)
+            if json_match:
+                json_str = json_match.group(0)
+                parsed_response = json.loads(json_str)
+                return parsed_response
+            else:
+                raise ValueError("No valid JSON found in response")
+                
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.warning(f"⚠️ Location analysis JSON parsing failed: {e}")
+            return {
+                "events": [{"name": "Local Events", "style_keywords": ["casual", "comfortable"]}],
+                "recommended_styles": ["casual", "comfortable"],
+                "error": "Partial analysis available"
+            }
+        
+    except Exception as e:
+        logger.error(f"❌ Location analysis error: {str(e)}")
+        return {
+            "events": [],
+            "recommended_styles": ["casual"],
+            "error": f"Analysis failed: {str(e)}"
+        }
+
+def _search_products_by_event_style(style_keywords: list, request: LocationEventRequest, products: list):
+    """
+    Search products based on event style keywords
+    """
+    # Apply filters first
+    filtered_products = [
+        p for p in products
+        if (request.price_min is None or p['price'] >= request.price_min) and
+           (request.price_max is None or p['price'] <= request.price_max) and
+           (not request.category or request.category.lower() == 'all' or p.get('category', '').lower() == request.category.lower())
+    ]
+    
+    if not filtered_products:
+        return []
+    
+    # Score products based on style keywords
+    scored_products = []
+    
+    for product in filtered_products:
+        score = 0
+        text_to_search = f"{product.get('title', '')} {product.get('description', '')} {product.get('vibe_tags', '')}".lower()
+        
+        for keyword in style_keywords:
+            if keyword.lower() in text_to_search:
+                score += 1
+        
+        if score > 0:
+            product_copy = product.copy()
+            product_copy['similarity_score'] = score / len(style_keywords)
+            product_copy['matched_keywords'] = [kw for kw in style_keywords if kw.lower() in text_to_search]
+            scored_products.append(product_copy)
+    
+    # Sort by score and return top results
+    scored_products.sort(key=lambda x: x['similarity_score'], reverse=True)
+    return scored_products[:request.max_results]
+
 # ============================================================
 # ROUTES
 # ============================================================
@@ -339,6 +515,83 @@ def vibe_search(request: VibeSearchRequest):
         "search_method": "gemini" if GEMINI_AVAILABLE else "fallback",
         "message": "No matches found. Try a different vibe query.",
     }
+
+@app.post("/search/location-events")
+def location_event_search(request: LocationEventRequest):
+    """
+    NEW FEATURE: Search products based on location and local events/festivals
+    """
+    location = request.location
+    logger.info(f"📍 NEW LOCATION EVENT SEARCH: '{location}'")
+    
+    try:
+        # Step 1: Analyze location to determine events
+        location_analysis = _analyze_location_events(location)
+        
+        if "error" in location_analysis and not location_analysis.get("events"):
+            logger.warning(f"⚠️ Location analysis failed for: {location}")
+            return {
+                "products": [],
+                "location": location,
+                "events": [],
+                "total_matches": 0,
+                "message": "Could not analyze location for events. Please try a more specific location.",
+                "error": location_analysis.get("error")
+            }
+        
+        # Step 2: Extract style keywords from events
+        all_style_keywords = []
+        events_info = location_analysis.get("events", [])
+        
+        for event in events_info:
+            style_keywords = event.get("style_keywords", [])
+            all_style_keywords.extend(style_keywords)
+        
+        # Add recommended styles
+        recommended_styles = location_analysis.get("recommended_styles", [])
+        all_style_keywords.extend(recommended_styles)
+        
+        # Remove duplicates and filter empty
+        unique_keywords = list(set([kw for kw in all_style_keywords if kw]))
+        
+        if not unique_keywords:
+            unique_keywords = ["casual", "comfortable"]  # Fallback
+        
+        logger.info(f"🎯 Style keywords for {location}: {unique_keywords}")
+        
+        # Step 3: Search products based on style keywords
+        search_results = _search_products_by_event_style(unique_keywords, request, products_list)
+        
+        # Step 4: Return results
+        if search_results:
+            logger.info(f"✅ Location event search returned {len(search_results)} results")
+            return {
+                "products": search_results,
+                "location": location,
+                "location_info": location_analysis.get("location_info", {}),
+                "events": events_info,
+                "style_keywords": unique_keywords,
+                "seasonal_note": location_analysis.get("seasonal_note", ""),
+                "total_matches": len(search_results),
+                "search_method": "location_event_analysis",
+                "message": f"Found {len(search_results)} items perfect for events in {location}"
+            }
+        else:
+            logger.warning("⚠️ No products found for location events")
+            return {
+                "products": [],
+                "location": location,
+                "location_info": location_analysis.get("location_info", {}),
+                "events": events_info,
+                "style_keywords": unique_keywords,
+                "total_matches": 0,
+                "search_method": "location_event_analysis",
+                "message": f"No suitable products found for events in {location}. Try adjusting your filters."
+            }
+            
+    except Exception as e:
+        logger.error(f"❌ Location event search error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Location event search failed: {str(e)}")
 
 @app.post("/search/image")
 async def image_search(file: UploadFile = File(...), max_results: int = 12):
@@ -482,7 +735,6 @@ Respond ONLY in valid JSON format:
     except Exception as e:
         logger.error(f"❌ Image search error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Image search failed: {str(e)}")
-
 
 @app.get("/trending")
 def get_trending():

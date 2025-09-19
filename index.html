@@ -390,7 +390,13 @@ header.nav {
     .small{font-size:13px; color:#9ca3af}
 
     /* Right column - trend radar */
-    .trend-card .controls{display:flex; gap:16px; align-items:center; margin-bottom:12px}
+    .trend-card .controls{
+      display:flex; 
+      gap:16px; 
+      align-items:center; 
+      margin-bottom:12px;
+      flex-wrap: wrap;
+    }
     select.city{
       padding:12px 16px; 
       border-radius:12px; 
@@ -398,10 +404,38 @@ header.nav {
       background: white;
       transition: border-color 0.2s ease;
       font-family: 'Inter', sans-serif;
+      min-width: 140px;
     }
     select.city:focus {
       border-color: var(--accent);
     }
+    
+    /* Event Shopping Button */
+    .event-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .event-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+    .event-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
     .chips{display:flex; gap:12px; flex-wrap:wrap; transition: all 0.3s ease;}
     .chip{
       background:#fff0f4; 
@@ -421,6 +455,44 @@ header.nav {
     }
     .chip:active {
       transform: translateY(0);
+    }
+
+    /* Event chips with different styling */
+    .event-chip {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      border: 1px solid rgba(102, 126, 234, 0.2);
+      color: #667eea;
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: 'Inter', sans-serif;
+    }
+    .event-chip:hover {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+      transform: translateY(-2px);
+    }
+
+    /* Event info section */
+    .event-info {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+      border: 1px solid rgba(102, 126, 234, 0.1);
+      border-radius: 8px;
+      padding: 12px;
+      margin: 12px 0;
+      font-size: 13px;
+    }
+    .event-info .event-title {
+      font-weight: 600;
+      color: #667eea;
+      margin-bottom: 8px;
+    }
+    .event-info .event-desc {
+      color: #6b7280;
+      font-size: 12px;
+      margin-bottom: 4px;
     }
 
     /* featured small horizontal product list */
@@ -488,6 +560,14 @@ header.nav {
         }
         header.nav {
           padding: 16px 20px;
+        }
+        .trend-card .controls {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .event-btn {
+          width: 100%;
+          justify-content: center;
         }
     }
   </style>
@@ -591,8 +671,8 @@ header.nav {
         <aside class="trend-card card" id="trend">
           <div style="display:flex; justify-content:space-between; align-items:center">
             <div>
-              <div class="section-title">Trending Radar</div>
-              <div class="muted">Hyper-local trends for your city</div>
+              <div class="section-title">Trend Radar</div>
+              <div class="muted">Trends & event shopping for your city</div>
             </div>
             <div class="small muted">Live demo</div>
           </div>
@@ -605,16 +685,36 @@ header.nav {
               <option>Lucknow</option>
               <option>Indore</option>
               <option>Jaipur</option>
+              <option>Kolkata</option>
+              <option>Chennai</option>
+              <option>Hyderabad</option>
+              <option>Pune</option>
             </select>
+            <button id="eventSearchBtn" class="event-btn" onclick="searchLocationEvents()">
+              🎭 Event Shopping
+            </button>
           </div>
 
-          <div style="margin-top:12px" id="chipsArea">
+          <!-- Event Information Section -->
+          <div id="eventInfo" style="margin-top:16px; display:none;">
+            <div class="event-info">
+              <div class="event-title">📅 Upcoming Events in <span id="currentCity">Selected City</span>:</div>
+              <div id="eventsList"></div>
             </div>
+          </div>
+
+          <!-- Event Chips -->
+          <div id="eventChips" style="margin-top:12px;">
+          </div>
+
+          <!-- Regular Trending Vibes -->
+          <div style="margin-top:12px" id="chipsArea">
+          </div>
 
           <div style="margin-top:18px">
             <div class="section-title" style="font-size:16px">Featured Products</div>
             <div id="featuredRow" class="featured-row">
-              </div>
+            </div>
           </div>
         </aside>
       </main>
@@ -657,12 +757,12 @@ header.nav {
     }
 
     // FIXED: Render product cards from a list of products
-    function renderProducts(products) {
-      const grid = document.getElementById('resultsGrid');
+    function renderProducts(products, containerId = 'resultsGrid') {
+      const grid = document.getElementById(containerId);
       grid.innerHTML = ''; 
 
       if (!products || products.length === 0) {
-        grid.innerHTML = '<div style="text-align:center; padding: 20px; color: #666;">No products found for this vibe. Try a different query!</div>';
+        grid.innerHTML = '<div style="text-align:center; padding: 20px; color: #666;">No products found for this search. Try a different query!</div>';
         return;
       }
 
@@ -692,8 +792,8 @@ header.nav {
     }
 
     // FIXED: Render featured product cards
-    function renderFeatured(products) {
-      const row = document.getElementById('featuredRow');
+    function renderFeatured(products, containerId = 'featuredRow') {
+      const row = document.getElementById(containerId);
       row.innerHTML = '';
       
       if (!products || products.length === 0) {
@@ -742,6 +842,138 @@ header.nav {
         wrap.appendChild(chip);
       });
       area.appendChild(wrap);
+    }
+
+    // NEW: Render event chips
+    function renderEventChips(events) {
+      const area = document.getElementById('eventChips');
+      area.innerHTML = '';
+      
+      if (!events || events.length === 0) {
+        return;
+      }
+      
+      const wrap = document.createElement('div');
+      wrap.style.display = 'flex';
+      wrap.style.gap = '8px';
+      wrap.style.flexWrap = 'wrap';
+      wrap.style.marginBottom = '12px';
+      
+      events.forEach(event => {
+        const chip = document.createElement('div');
+        chip.className = 'event-chip';
+        chip.textContent = `🎭 ${event.name || event}`;
+        chip.onclick = () => {
+          // When clicking an event chip, search for that event style
+          if (event.style_keywords && event.style_keywords.length > 0) {
+            document.getElementById('vibeInput').value = event.style_keywords.join(' ');
+            submitVibe();
+          }
+        };
+        wrap.appendChild(chip);
+      });
+      area.appendChild(wrap);
+    }
+
+    // NEW: Location-based event search
+    async function searchLocationEvents() {
+      const citySelect = document.getElementById('citySelect');
+      const location = citySelect.value;
+      
+      const btn = document.getElementById('eventSearchBtn');
+      const prevText = btn.innerHTML;
+      btn.innerHTML = '🔍 Analyzing...'; 
+      btn.disabled = true;
+
+      try {
+        console.log('📍 Searching for location events:', location);
+        
+        const response = await fetch(BACKEND_URL + '/search/location-events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            location: location,
+            max_results: 6
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Backend responded with status: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Received location event results:', data);
+        
+        // Show event information
+        const eventInfo = document.getElementById('eventInfo');
+        const eventsList = document.getElementById('eventsList');
+        const currentCity = document.getElementById('currentCity');
+        
+        currentCity.textContent = location;
+        
+        if (data.events && data.events.length > 0) {
+          eventInfo.style.display = 'block';
+          eventsList.innerHTML = '';
+          
+          data.events.slice(0, 3).forEach(event => {
+            const eventDiv = document.createElement('div');
+            eventDiv.style.marginBottom = '8px';
+            eventDiv.innerHTML = `
+              <div class="event-desc">
+                <strong>${event.name}</strong> ${event.type ? `(${event.type})` : ''}
+              </div>
+              <div style="font-size: 11px; color: #9ca3af;">
+                ${event.description || 'Local cultural event'}
+              </div>
+            `;
+            eventsList.appendChild(eventDiv);
+          });
+          
+          // Render event chips
+          renderEventChips(data.events.slice(0, 4));
+        } else {
+          eventInfo.style.display = 'none';
+        }
+        
+        // Show seasonal note if available
+        if (data.seasonal_note) {
+          const seasonalDiv = document.createElement('div');
+          seasonalDiv.style.fontSize = '12px';
+          seasonalDiv.style.color = '#6b7280';
+          seasonalDiv.style.marginTop = '8px';
+          seasonalDiv.style.fontStyle = 'italic';
+          seasonalDiv.innerHTML = `💡 ${data.seasonal_note}`;
+          eventsList.appendChild(seasonalDiv);
+        }
+        
+        if (data && data.products && data.products.length > 0) {
+          renderFeatured(data.products, 'featuredRow');
+          console.log(`🎭 Found ${data.products.length} products for events in ${location}`);
+        } else {
+          document.getElementById('featuredRow').innerHTML = 
+            '<div style="padding: 20px; color: #666; text-align: center; font-size: 13px;">No suitable products found for events in this location.</div>';
+        }
+        
+      } catch (error) {
+        console.error('❌ Error during location event search:', error);
+        
+        // Hide event info on error
+        document.getElementById('eventInfo').style.display = 'none';
+        document.getElementById('eventChips').innerHTML = '';
+        
+        if (error.message.includes('Failed to fetch')) {
+          document.getElementById('featuredRow').innerHTML = 
+            '<div style="padding: 16px; color: #ef4444; text-align: center; font-size: 13px;">Cannot connect to server. Please check if backend is running.</div>';
+        } else {
+          document.getElementById('featuredRow').innerHTML = 
+            '<div style="padding: 16px; color: #ef4444; text-align: center; font-size: 13px;">Event search failed. Please try again.</div>';
+        }
+      } finally {
+        btn.innerHTML = prevText; 
+        btn.disabled = false;
+      }
     }
 
     // FIXED: Vibe search function with better error handling
