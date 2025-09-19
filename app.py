@@ -2,16 +2,20 @@ from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import pandas as pd
-import numpy as np
 import os
 import logging
 import google.generativeai as genai
 from typing import List, Optional
-from sentence_transformers import SentenceTransformer, util
-import torch
 import random
 import re
 import base64
+import json
+from dotenv import load_dotenv
+from PIL import Image
+import io
+
+# Load env vars first
+load_dotenv()
 
 # ============================================================
 # CONFIG
@@ -22,23 +26,44 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Myntra Vibe Shopping API", version="2.0.0")
 
+# FIXED: Updated CORS origins to include your frontend
+origins = [
+    "http://localhost:8080",
+    "http://0.0.0.0:8080",
+    "http://127.0.0.1:8080",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "*"  # Allow all origins for development (remove in production)
+]
+
 # Enable CORS (for your frontend)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
-# Gemini setup
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-model_gemini = gemini_model  # Alias for consistency
-GEMINI_AVAILABLE = True
-
-# Embedding model
-embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+# FIXED: Better Gemini setup with error handling
+try:
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    if gemini_api_key:
+        genai.configure(api_key=gemini_api_key)
+        gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+        model_gemini = gemini_model
+        GEMINI_AVAILABLE = True
+        logger.info("✅ Gemini API configured successfully")
+    else:
+        logger.warning("⚠️ GEMINI_API_KEY not found in environment variables")
+        GEMINI_AVAILABLE = False
+        model_gemini = None
+except Exception as e:
+    logger.error(f"❌ Error configuring Gemini API: {str(e)}")
+    GEMINI_AVAILABLE = False
+    model_gemini = None
 
 # ============================================================
 # DATA LOADING
@@ -47,6 +72,7 @@ embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 try:
     products_df = pd.read_csv("products.csv")
     products_list = products_df.to_dict("records")
+    logger.info(f"✅ Loaded {len(products_list)} products from CSV")
 except FileNotFoundError:
     logger.warning("⚠️ products.csv not found. Using sample fallback products.")
     products_list = [
@@ -85,16 +111,26 @@ except FileNotFoundError:
             "image_url": "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=400",
             "category": "skirts",
             "vibe_tags": "bohemian, boho, free-spirited, patterns, flowing",
+        },
+        {
+            "id": 5,
+            "title": "Minimalist White T-Shirt",
+            "description": "Clean, simple white cotton tee",
+            "price": 899.0,
+            "image_url": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400",
+            "category": "tops",
+            "vibe_tags": "minimalist, clean, basic, casual, white",
+        },
+        {
+            "id": 6,
+            "title": "Vintage High-Waist Jeans",
+            "description": "Classic high-waisted denim with vintage wash",
+            "price": 2899.0,
+            "image_url": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=400",
+            "category": "bottoms",
+            "vibe_tags": "vintage, retro, high-waist, denim, classic",
         }
     ]
-
-# Precompute embeddings
-logger.info("🔄 Encoding product embeddings...")
-product_texts = [
-    f"{p['title']} {p['description']} {p.get('vibe_tags', '')}" for p in products_list
-]
-product_embeddings = embedding_model.encode(product_texts, convert_to_tensor=True)
-logger.info("✅ Product embeddings ready!")
 
 # ============================================================
 # MODELS
@@ -107,76 +143,9 @@ class VibeSearchRequest(BaseModel):
     price_max: Optional[float] = None
     category: Optional[str] = None
 
-
 # ============================================================
 # HELPERS
 # ============================================================
-
-def semantic_search(query: str, top_k: int = 20) -> List[int]:
-    """
-    Perform semantic search using sentence transformers.
-    Returns indices of top matching products.
-    """
-    query_embedding = embedding_model.encode(query, convert_to_tensor=True)
-    cos_scores = util.cos_sim(query_embedding, product_embeddings)[0]
-    top_results = torch.topk(cos_scores, k=min(top_k, len(products_list)))
-    return top_results.indices.tolist()
-
-
-def get_ai_keywords(vibe: str) -> List[str]:
-    """
-    Use Gemini to extract relevant keywords from a vibe description.
-    """
-    try:
-        if not GEMINI_AVAILABLE or not model_gemini:
-            return []
-        
-        prompt = f"""
-You are an AI fashion stylist and shopping assistant.  
-Your task: map vague or cultural user queries to specific catalog items.  
-
-Follow these exact steps:
-
-Step 1: Interpret the user query
-- Identify if the query is about an aesthetic (e.g., cottagecore, Y2K), a celebrity look (e.g., Taylor Swift Eras Tour), an event (e.g., rooftop karaoke night), or a mood/emotion (e.g., cozy, confident).  
-- Expand the query into a list of STYLE ELEMENTS: { "colors, fabrics, silhouettes, aesthetics, moods, cultural references" }.  
-
-Step 2: Match with catalog
-The catalog is provided below. Each product has: ID, title, description, category, vibe_tags.  
-
-Catalog:
-{product_context}
-
-Compare STYLE ELEMENTS against each product’s title, description, and vibe_tags.  
-Decide which products BEST align with the query.  
-Ranking criteria (in order of importance):
-1. Aesthetic/mood alignment (most critical).  
-2. Relevance to cultural reference (if any).  
-3. Visual elements (colors, fabrics, silhouettes).  
-4. Secondary match: versatility or adjacent style.  
-
-Step 3: Output
-Return ONLY the product IDs of the top {min(request.max_results, len(filtered_products))} matches.  
-Format: a single line with comma-separated IDs. Example: 2,5,7,9  
-
-Rules:
-- DO NOT output any explanation.  
-- DO NOT repeat the query.  
-- DO NOT include extra words or symbols, only numbers separated by commas.  
----
-User query: "{request.vibe}"
-"""
-
-        
-        response = model_gemini.generate_content(prompt)
-        keywords_text = response.text.strip()
-        keywords = [k.strip().lower() for k in keywords_text.split(',')]
-        return keywords[:8]  # Limit to 8 keywords
-        
-    except Exception as e:
-        logger.error(f"❌ Keyword extraction error: {str(e)}")
-        return []
-
 
 def _run_enhanced_gemini_search(request: VibeSearchRequest, products: list):
     """
@@ -184,7 +153,8 @@ def _run_enhanced_gemini_search(request: VibeSearchRequest, products: list):
     """
     try:
         if not GEMINI_AVAILABLE or not model_gemini:
-            return None
+            logger.warning("⚠️ Gemini not available, falling back to keyword search")
+            return _fallback_keyword_search(request, products)
         
         # Apply filters first
         filtered_products = [
@@ -213,34 +183,49 @@ def _run_enhanced_gemini_search(request: VibeSearchRequest, products: list):
         ])
         
         prompt = f"""
-        User is searching for: "{request.vibe}"
-        
-        This could be:
-        - A fashion aesthetic (like "dark academia", "cottagecore")
-        - A cultural reference (like "Priyanka Chopra in Barfi", "Taylor Swift folklore era")
-        - A movie/character style reference
-        - A lifestyle or personality-based fashion query
-        
-        From the following products, identify the top {min(request.max_results, len(sampled_products))} that best match this vibe/aesthetic:
-        
-        {product_descriptions}
-        
-        Consider:
-        - Visual aesthetics and style elements
-        - Color palettes and patterns
-        - Cultural and historical context
-        - Lifestyle associations
-        - Emotional/mood connections
-        
-        Respond with ONLY the Product IDs (numbers) separated by commas, ordered by relevance.
-        Example: 123, 456, 789
-        """
-        
+You are a fashion stylist AI.
+
+User vibe query: "{request.vibe}"
+
+You are given a product catalog below. Each product has:
+- ID
+- Title
+- Short description
+- Category
+- Vibe tags
+
+Your task:
+1. Analyze the user's vibe query to understand the implied aesthetics, mood, style, occasion or cultural references and translate them to recognizable vibe keywords.
+2. Identify the vibe keywords implied by the user's query 
+   (e.g., mood, aesthetic, style, occasion).
+3. Match them against the catalog.
+4. Pick the top {min(request.max_results, len(sampled_products))} most relevant product IDs.
+
+Rules:
+- Match using aesthetics, tags, mood, colors, patterns, lifestyle cues.
+- Prefer products that share multiple overlapping vibe tags with the query.
+- If nothing matches well, return the closest vibe tags (do not leave empty).
+- Respond ONLY in valid JSON.
+
+Output format (strict):
+{{
+  "ids": [1, 2, 3]
+}}
+
+Catalog:
+{product_descriptions}
+"""
+
         response = model_gemini.generate_content(prompt)
-        response_text = response.text.strip().replace(' ', '')
+        response_text = response.text.strip()
         
-        # Extract product IDs from response
-        product_ids = [int(id_str) for id_str in re.findall(r'\b\d+\b', response_text)]
+        # Try to parse JSON response
+        try:
+            parsed_response = json.loads(response_text)
+            product_ids = parsed_response.get("ids", [])
+        except json.JSONDecodeError:
+            # Fallback to regex if JSON parsing fails
+            product_ids = [int(id_str) for id_str in re.findall(r'\b\d+\b', response_text)]
         
         # Build result products
         products_dict = {p['id']: p for p in sampled_products}
@@ -249,15 +234,52 @@ def _run_enhanced_gemini_search(request: VibeSearchRequest, products: list):
         for pid in product_ids:
             if pid in products_dict:
                 product = products_dict[pid].copy()
-                product['similarity_score'] = 0.8  # Mock similarity score
+                product['similarity_score'] = 0.9  # Gemini only, mock score
                 matched_products.append(product)
         
         return matched_products[:request.max_results]
         
     except Exception as e:
         logger.error(f"❌ Enhanced Gemini Search Error: {str(e)}")
-        return None
+        return _fallback_keyword_search(request, products)
 
+def _fallback_keyword_search(request: VibeSearchRequest, products: list):
+    """
+    Fallback keyword-based search when Gemini is not available
+    """
+    logger.info("🔍 Using fallback keyword search")
+    
+    # Apply filters first
+    filtered_products = [
+        p for p in products
+        if (request.price_min is None or p['price'] >= request.price_min) and
+           (request.price_max is None or p['price'] <= request.price_max) and
+           (not request.category or request.category.lower() == 'all' or p.get('category', '').lower() == request.category.lower())
+    ]
+    
+    if not filtered_products:
+        return []
+    
+    # Simple keyword matching
+    vibe_keywords = request.vibe.lower().split()
+    scored_products = []
+    
+    for product in filtered_products:
+        score = 0
+        text_to_search = f"{product.get('title', '')} {product.get('description', '')} {product.get('vibe_tags', '')}".lower()
+        
+        for keyword in vibe_keywords:
+            if keyword in text_to_search:
+                score += 1
+        
+        if score > 0:
+            product_copy = product.copy()
+            product_copy['similarity_score'] = score / len(vibe_keywords)
+            scored_products.append(product_copy)
+    
+    # Sort by score and return top results
+    scored_products.sort(key=lambda x: x['similarity_score'], reverse=True)
+    return scored_products[:request.max_results]
 
 # ============================================================
 # ROUTES
@@ -265,16 +287,18 @@ def _run_enhanced_gemini_search(request: VibeSearchRequest, products: list):
 
 @app.get("/")
 def read_root():
-    return {"message": "Myntra Vibe Shopping API is running!", "total_products": len(products_list)}
-
+    return {
+        "message": "Myntra Vibe Shopping API is running!", 
+        "total_products": len(products_list),
+        "gemini_available": GEMINI_AVAILABLE
+    }
 
 @app.get("/products")
 def get_all_products(limit: int = 20, category: Optional[str] = None):
     filtered = products_list
-    if category:
+    if category and category.lower() != 'all':
         filtered = [p for p in filtered if p.get("category", "").lower() == category.lower()]
-    return filtered[:limit]
-
+    return {"products": filtered[:limit], "total": len(filtered)}
 
 @app.get("/products/{product_id}")
 def get_product(product_id: int):
@@ -283,136 +307,216 @@ def get_product(product_id: int):
         raise HTTPException(status_code=404, detail="Product not found")
     return product
 
-
 @app.get("/categories")
 def get_categories():
-    return {"categories": list(set(p.get("category", "uncategorized") for p in products_list))}
-
+    categories = list(set(p.get("category", "uncategorized") for p in products_list))
+    return {"categories": categories}
 
 @app.post("/search/vibe")
 def vibe_search(request: VibeSearchRequest):
     vibe = request.vibe
     logger.info(f"🔍 NEW VIBE SEARCH: '{vibe}'")
 
-    # Try Gemini search first (most sophisticated)
-    gemini_results = _run_enhanced_gemini_search(request, products_list)
+    # Use enhanced search (Gemini or fallback)
+    search_results = _run_enhanced_gemini_search(request, products_list)
     
-    if gemini_results:
-        logger.info(f"✅ Gemini search returned {len(gemini_results)} results")
+    if search_results:
+        logger.info(f"✅ Search returned {len(search_results)} results")
         return {
-            "products": gemini_results,
+            "products": search_results,
             "query": vibe,
-            "total_matches": len(gemini_results),
-            "search_method": "gemini_enhanced",
-            "message": f"Found {len(gemini_results)} items matching your vibe using AI",
+            "total_matches": len(search_results),
+            "search_method": "gemini" if GEMINI_AVAILABLE else "fallback",
+            "message": f"Found {len(search_results)} items matching your vibe",
         }
     
-    # Fallback to semantic search
-    logger.info("🔄 Falling back to semantic search")
-    indices = semantic_search(vibe, top_k=request.max_results)
-    matched = [products_list[i] for i in indices]
-
-    # Refine with AI keywords
-    keywords = get_ai_keywords(vibe)
-    if keywords:
-        refined = []
-        for product in matched:
-            text = f"{product['title']} {product['description']} {product.get('vibe_tags', '')}".lower()
-            if any(kw in text for kw in keywords):
-                refined.append(product)
-        if refined:
-            matched = refined
-
-    # Apply filters
-    if request.price_min is not None:
-        matched = [p for p in matched if p["price"] >= request.price_min]
-    if request.price_max is not None:
-        matched = [p for p in matched if p["price"] <= request.price_max]
-    if request.category:
-        matched = [p for p in matched if p.get("category", "").lower() == request.category.lower()]
-
+    # If no results found
+    logger.warning("⚠️ Search returned no results")
     return {
-        "products": matched,
+        "products": [],
         "query": vibe,
-        "total_matches": len(matched),
-        "keywords": keywords,
-        "search_method": "semantic_fallback",
-        "message": f"Found {len(matched)} items matching your vibe",
+        "total_matches": 0,
+        "search_method": "gemini" if GEMINI_AVAILABLE else "fallback",
+        "message": "No matches found. Try a different vibe query.",
     }
 
 @app.post("/search/image")
-async def image_search(file: UploadFile = File(...), additional_text: str = ""):
+async def image_search(file: UploadFile = File(...), max_results: int = 12):
     """
-    Search products based on an uploaded image + optional user text.
+    FIXED: Search products based on an uploaded image using Gemini Vision.
     """
     try:
-        # Read image bytes
+        if not GEMINI_AVAILABLE:
+            raise HTTPException(
+                status_code=503, 
+                detail="Image search requires Gemini API which is not available. Please set GEMINI_API_KEY."
+            )
+        
+        # Validate file type
+        if not file.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="File must be an image")
+        
+        # Read and process image
         image_bytes = await file.read()
-        b64_image = base64.b64encode(image_bytes).decode("utf-8")
-
-        # Prepare product context (limit for efficiency)
-        products = MODELS.get('products_list', [])[:40]
+        logger.info(f"📷 Processing image: {file.filename}, size: {len(image_bytes)} bytes")
+        
+        # Optimize image size for Gemini (optional but recommended)
+        try:
+            image = Image.open(io.BytesIO(image_bytes))
+            if image.size[0] > 1024 or image.size[1] > 1024:
+                image.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+                img_buffer = io.BytesIO()
+                image.save(img_buffer, format='JPEG', quality=85)
+                image_bytes = img_buffer.getvalue()
+                logger.info("📷 Image resized for optimization")
+        except Exception as e:
+            logger.warning(f"⚠️ Image optimization failed: {e}, using original")
+        
+        # Prepare product context for Gemini (limit for token efficiency)
+        sample_products = random.sample(products_list, min(40, len(products_list)))
         product_context = "\n".join([
-            f"ID: {p['id']}, Title: {p['title']}, Description: {p.get('description','')}, Tags: {p.get('vibe_tags','')}"
-            for p in products
+            f"ID: {p['id']}, Title: {p['title']}, Description: {p.get('description','')[:100]}, "
+            f"Category: {p.get('category','')}, Vibe Tags: {p.get('vibe_tags','')}"
+            for p in sample_products
         ])
 
-        # Prompt for Gemini Vision
+        # Enhanced prompt for Gemini Vision
         prompt = f"""
-You are a fashion stylist AI.
-Analyze the uploaded image + optional text "{additional_text}".
-1. Extract STYLE ELEMENTS (aesthetics, mood, colors, patterns, silhouettes, cultural references).
-2. Match them against this catalog:
+You are an expert fashion stylist and visual analyst.
 
+Analyze the uploaded image and extract fashion/style elements:
+
+1. VISUAL ANALYSIS:
+   - Colors (dominant and accent colors)
+   - Patterns (floral, geometric, solid, etc.)
+   - Silhouettes (oversized, fitted, flowy, structured)
+   - Textures (denim, leather, cotton, silk, etc.)
+   - Style aesthetics (minimalist, bohemian, grunge, preppy, etc.)
+   - Occasion/mood (casual, formal, party, work, vacation)
+
+2. VIBE KEYWORDS:
+   Extract 5-10 relevant style keywords that describe this image's aesthetic
+
+3. PRODUCT MATCHING:
+   Match these vibes against the product catalog below and select the {max_results} most relevant product IDs.
+
+Rules:
+- Focus on style similarity, not exact product matching
+- Consider color harmony, aesthetic compatibility, and vibe alignment
+- Prefer products with overlapping vibe tags
+- Return diverse product types when possible
+
+Product Catalog:
 {product_context}
 
-Return ONLY JSON in this format:
+Respond ONLY in valid JSON format:
 {{
-  "ids": [ID1, ID2, ID3]
+  "analysis": {{
+    "colors": ["color1", "color2"],
+    "patterns": ["pattern1", "pattern2"],
+    "aesthetic": "aesthetic_description",
+    "vibe_keywords": ["keyword1", "keyword2", "keyword3"]
+  }},
+  "ids": [1, 2, 3, 4, 5]
 }}
 """
 
-        # Call Gemini Vision
-        response = model_gemini.generate_content(
-            [prompt, {"mime_type": file.content_type, "data": b64_image}]
-        )
+        # Create the image part for Gemini
+        image_part = {
+            "mime_type": file.content_type,
+            "data": image_bytes
+        }
 
-        raw = response.text.strip()
+        # Call Gemini Vision API
+        logger.info("🤖 Calling Gemini Vision API for image analysis")
+        response = model_gemini.generate_content([prompt, image_part])
+        raw_response = response.text.strip()
+        
+        logger.info(f"📋 Raw Gemini response: {raw_response[:200]}...")
 
         # Parse Gemini response
+        product_ids = []
+        analysis = {}
         try:
-            parsed = json.loads(raw)
-            ids = parsed.get("ids", [])
-        except:
-            ids = [int(x) for x in re.findall(r"\b\d+\b", raw)]
+            # ✅ CORRECTED LOGIC: Use a more reliable regex to find the JSON object.
+            json_match = re.search(r'\{[\s\S]*\}', raw_response)
+            if json_match:
+                json_str = json_match.group(0)
+                # Parse the extracted JSON string
+                parsed_response = json.loads(json_str)
+                product_ids = parsed_response.get("ids", [])
+                analysis = parsed_response.get("analysis", {})
+            else:
+                raise ValueError("No valid JSON found in response")
+                
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.warning(f"⚠️ JSON parsing failed: {e}, using regex fallback")
+            # Fallback: extract numbers from response
+            product_ids = [int(x) for x in re.findall(r'\b\d+\b', raw_response)]
+            analysis = {"vibe_keywords": ["image-based-search"]}
+        
 
+        # Build products dictionary for quick lookup
+        products_dict = {p['id']: p for p in products_list}
+        
         # Collect matched products
-        products_dict = {p['id']: p for p in products}
-        matched = [products_dict[i] for i in ids if i in products_dict]
+        matched_products = []
+        for pid in product_ids[:max_results]:
+            if pid in products_dict:
+                product = products_dict[pid].copy()
+                product['similarity_score'] = 0.9  # Mock score for image search
+                matched_products.append(product)
 
-        return {"products": matched, "message": f"Found {len(matched)} image-based matches"}
+        logger.info(f"✅ Image search completed: {len(matched_products)} products matched")
+        
+        return {
+            "products": matched_products,
+            "total_matches": len(matched_products),
+            "analysis": analysis,
+            "search_method": "gemini_vision",
+            "message": f"Found {len(matched_products)} products matching your image style"
+        }
     
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"❌ Image search error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Image search failed: {str(e)}")
 
 
 @app.get("/trending")
 def get_trending():
-    return {
-        "trending_vibes": [
-            "cozy cottagecore aesthetic",
-            "dark academia vibes",
-            "Y2K nostalgia",
-            "minimalist clean girl",
-        ],
-        "featured_products": products_list[:6],
-    }
-
+    """
+    Get trending vibes and featured products
+    """
+    try:
+        # Sample some random products for featured section
+        featured_products = random.sample(products_list, min(6, len(products_list)))
+        
+        return {
+            "trending_vibes": [
+                "cozy cottagecore aesthetic",
+                "dark academia vibes", 
+                "Y2K nostalgia",
+                "minimalist clean girl",
+                "bohemian free spirit",
+                "vintage retro style"
+            ],
+            "featured_products": featured_products,
+            "message": "Trending data loaded successfully"
+        }
+    except Exception as e:
+        logger.error(f"❌ Error in /trending endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to load trending data: {str(e)}")
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "total_products": len(products_list)}
-
+    return {
+        "status": "ok", 
+        "total_products": len(products_list),
+        "gemini_available": GEMINI_AVAILABLE,
+        "message": "API is healthy and running"
+    }
 
 # ============================================================
 # RUN
@@ -420,4 +524,4 @@ def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
