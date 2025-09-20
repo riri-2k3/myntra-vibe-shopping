@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Myntra Explore</title>
+
+  <!-- Fonts + Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Navbar -->
+  <div class="full-width-container">
+    <div class="content-container">
+      <header class="nav">
+        <div class="desktop-preHeaderContent">
+          <a class="desktop-preHeaderLinks" href="/myntrainsider">Myntra Insider</a>
+          <a class="desktop-preHeaderLinks" href="/contactus">Contact Us</a>
+        </div>
+        <div class="desktop-mainHeader">
+          <div class="desktop-logoContainer">
+            <a href="index.html">
+              <img src="myntra-transparent-icon-free-png.webp" alt="Myntra Logo" class="logo">
+            </a>
+          </div>
+          <nav class="desktop-navbar">
+            <a href="index.html">Home</a>
+            <a href="explore.html">Vibe Search</a>
+            <a href="explore.html#trend">Trend Radar</a>
+          </nav>
+          <div class="desktop-query">
+            <input type="text" placeholder="Search for products, brands and more" />
+          </div>
+        </div>
+      </header>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-full-width-container" style="margin-top: 100px;">
+    <div class="content-container">
+      <main class="two-col">
+
+        <!-- VIBE SEARCH SECTION -->
+        <div class="vibe-card card" id="vibe">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <div>
+              <div class="section-title">Vibe Search</div>
+              <div class="muted">Type a vibe or upload an inspirational image</div>
+            </div>
+            <div class="small muted">Demo MVP</div>
+          </div>
+
+          <!-- Search Controls -->
+          <div class="controls" style="margin-top:12px;">
+            <input 
+              id="vibeInput" 
+              type="text" 
+              placeholder="outfit for rooftop karaoke night with friends"
+              style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px; margin-right: 8px;"
+            />
+            <label class="upload-btn" for="imageUpload" style="cursor: pointer; padding: 12px 16px; background: #f0f0f0; border-radius: 6px; margin-right: 8px;">
+              📷 Upload Image
+              <input id="imageUpload" type="file" accept="image/*" style="display:none" onchange="previewUpload(event)" />
+            </label>
+            <button 
+              class="search-btn" 
+              onclick="submitVibe()"
+              style="padding: 12px 20px; background: #ff6b6b; color: white; border: none; border-radius: 6px; cursor: pointer;"
+            >Find Vibes</button>
+          </div>
+
+          <!-- CRITICAL: Results Grid Container -->
+          <div style="margin-top:20px; min-height: 400px;">
+            <div id="resultsGrid" class="grid" style="width: 100%; min-height: 200px;">
+              <!-- Products will be rendered here -->
+              <div style="text-align: center; padding: 40px; color: #999;">
+                <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+                <div>Enter a vibe and click "Find Vibes" to see products</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TREND RADAR SECTION -->
+        <aside class="trend-card card" id="trend">
+          <div style="display:flex; justify-content:space-between; align-items:center">
+            <div>
+              <div class="section-title">Trend Radar</div>
+              <div class="muted">Trends & event shopping for your city</div>
+            </div>
+            <div class="small muted">Live demo</div>
+          </div>
+
+          <div class="controls" style="margin-top:12px;">
+            <select id="citySelect" class="city" onchange="loadTrends()">
+              <option>Bangalore</option>
+              <option>Mumbai</option>
+              <option>Delhi</option>
+              <option>Lucknow</option>
+              <option>Indore</option>
+              <option>Jaipur</option>
+              <option>Kolkata</option>
+              <option>Chennai</option>
+              <option>Hyderabad</option>
+              <option>Pune</option>
+            </select>
+            <button id="eventSearchBtn" class="event-btn" onclick="searchLocationEvents()">
+              🎭 Event Shopping
+            </button>
+          </div>
+
+          <!-- Event Information Section -->
+          <div id="eventInfo" style="margin-top:16px; display:none;">
+            <div class="event-info">
+              <div class="event-title">📅 Upcoming Events in <span id="currentCity">Selected City</span>:</div>
+              <div id="eventsList"></div>
+            </div>
+          </div>
+
+          <!-- Event Chips -->
+          <div id="eventChips" style="margin-top:12px;">
+          </div>
+
+          <!-- Regular Trending Vibes -->
+          <div style="margin-top:12px" id="chipsArea">
+          </div>
+
+          <div style="margin-top:18px">
+            <div class="section-title" style="font-size:16px">Featured Products</div>
+            <div id="featuredRow" class="featured-row">
+            </div>
+          </div>
+        </aside>
+      </main>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
