@@ -7,6 +7,7 @@
 
   <!-- Google font: Montserrat, Inter -->
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
   <style>
     /* CSS Reset for consistent cross-browser styling */
@@ -43,7 +44,6 @@
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   overflow-x: hidden;
-  /* Add padding to the top to prevent content from hiding under the fixed header */
   padding-top: 0; 
 }
 
@@ -54,14 +54,13 @@
 
     /* Content container for central alignment */
     .content-container {
-    max-width: 100%;  /* wider than before */
+    max-width: 100%;  
     margin: 0 auto;
     padding: 0 20px;
     }
-    /* Catalog section (full-width) */
+    
     .catalog {
     width: 100%;
-    
     margin: 40px auto;
     padding: 0 40px;
     }
@@ -75,16 +74,15 @@ header.nav {
     width: 100%;
     height: 85px;
     background-color: #fff;
-    
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     z-index: 10;
-    font-family: 'Assistant', sans-serif; /* Use a font similar to Myntra's */
+    font-family: 'Assistant', sans-serif; 
 }
 
 .desktop-preHeaderContent {
-    background-color: #fff; /* A light grey background */
+    background-color: #fff; 
     display: flex;
-    justify-content: flex-end; /* Align links to the right */
+    justify-content: flex-end; 
     padding: 8px 40px;
     font-size: 12px;
 }
@@ -104,22 +102,22 @@ header.nav {
 
 .desktop-logoContainer {
   display: flex;
-  align-items: center;   /* keeps logo centered vertically */
-  height: 20px;          /* navbar stays the same height */
+  align-items: center;   
+  height: 20px;          
 }
 
 .logo {
-  height: 120px;         /* bigger logo */
-  width: auto;          /* keeps proportions */
+  height: 120px;         
+  width: auto;          
   display: block;
-  margin-top: -25px;    /* shift slightly up if it looks too low */
+  margin-top: -25px;    
 }
 
 .desktop-navbar {
     display: flex;
     gap: 20px;
-    flex-grow: 1; /* Allows it to take up available space */
-    margin-left: 40px; /* Add space between logo and nav */
+    flex-grow: 1; 
+    margin-left: 40px; 
 }
 
 .desktop-navbar a {
@@ -130,7 +128,7 @@ header.nav {
     letter-spacing: .3px;
     text-decoration: none;
     padding-bottom: 25px;
-    border-bottom: 3px solid transparent; /* For hover effect */
+    border-bottom: 3px solid transparent; 
     transition: border-bottom .2s ease;
 }
 
@@ -159,33 +157,32 @@ header.nav {
   align-items: center;
   height: 40px;
   margin: 20px 30px 0 10px;
-  gap: 20px; /* space between wishlist & bag */
+  gap: 20px; 
 }
 
 .desktop-actions a {
   display: flex;
-  flex-direction: column; /* icon above text */
+  flex-direction: column; 
   align-items: center;
   margin-top: -15px;
   justify-content: center;
   font-size: 12px;
   text-decoration: none;
-  color: #282c3f; /* Myntra text color */
+  color: #282c3f; 
   position: relative;
 }
 
 .desktop-actions i {
   font-size: 20px;
-  margin-bottom: 2px; /* spacing between icon & text */
+  margin-bottom: 2px; 
   color: #282c3f;
 }
 
-/* Bag badge (item count) */
 .desktop-badge {
   position: absolute;
   top: -5px;
   right: -10px;
-  background: #ff3f6c; /* Myntra pink */
+  background: #ff3f6c; 
   color: #fff;
   font-size: 11px;
   font-weight: 600;
@@ -194,34 +191,28 @@ header.nav {
   line-height: 1;
 }
 
-/* Styling for the search bar container */
 .desktop-query {
-    width: 400px; /* Default width for large screens */
+    width: 400px; 
     position: relative;
-    /* This margin is not needed if you are using Flexbox, but here's the original for reference */
-    /* margin: 20px 20px 20px 40px; */
 }
 
-/* Styling for the search input field inside the container */
 .desktop-query input {
-    width: 100%; /* Make the input take the full width of its container */
+    width: 100%; 
     padding: 10px 15px;
     border: 1px solid #d4d5d9;
     background-color: #f5f5f6;
     border-radius: 4px;
     outline: none;
     font-size: 14px;
-    /* Add a transition for a smoother user experience */
     transition: width 0.3s ease;
 }
-/* Styling for the search bar when it is in focus (clicked) */
+
 .desktop-query input:focus {
-    background-color: #ffffff; /* Change background to white on focus */
-    border-color: #d4d5d9; /* Keeps the border color the same or can be changed */
-    box-shadow: 0 0 5px rgba(255, 63, 108, 0.2); /* Optional: add a subtle box shadow */
+    background-color: #ffffff; 
+    border-color: #d4d5d9; 
+    box-shadow: 0 0 5px rgba(255, 63, 108, 0.2); 
 }
 
-/* Responsive styles for the search bar width */
 @media (max-width: 1366px) {
     .desktop-query {
         width: 320px;
@@ -249,14 +240,14 @@ header.nav {
     /* Hero */
     .hero-container {
       background-image: url('myntra.jpeg');
-      background-size: cover; /* Ensures the image covers the entire container */
-      background-position: center; /* Centers the image within the container */
+      background-size: cover; 
+      background-position: center; 
       padding: 0;
-      min-height: 100vh; /* This makes the hero section full-screen height */
+      min-height: 100vh; 
       margin-bottom: 36px;
-      display: flex; /* Use flexbox to center the content */
-      align-items: center; /* Vertically centers the .hero content */
-      justify-content: center; /* Horizontally centers the .hero content */
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
     }
      
     .hero{
@@ -399,7 +390,13 @@ header.nav {
     .small{font-size:13px; color:#9ca3af}
 
     /* Right column - trend radar */
-    .trend-card .controls{display:flex; gap:16px; align-items:center; margin-bottom:12px}
+    .trend-card .controls{
+      display:flex; 
+      gap:16px; 
+      align-items:center; 
+      margin-bottom:12px;
+      flex-wrap: wrap;
+    }
     select.city{
       padding:12px 16px; 
       border-radius:12px; 
@@ -407,10 +404,38 @@ header.nav {
       background: white;
       transition: border-color 0.2s ease;
       font-family: 'Inter', sans-serif;
+      min-width: 140px;
     }
     select.city:focus {
       border-color: var(--accent);
     }
+    
+    /* Event Shopping Button */
+    .event-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .event-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+    .event-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
     .chips{display:flex; gap:12px; flex-wrap:wrap; transition: all 0.3s ease;}
     .chip{
       background:#fff0f4; 
@@ -430,6 +455,44 @@ header.nav {
     }
     .chip:active {
       transform: translateY(0);
+    }
+
+    /* Event chips with different styling */
+    .event-chip {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      border: 1px solid rgba(102, 126, 234, 0.2);
+      color: #667eea;
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: 'Inter', sans-serif;
+    }
+    .event-chip:hover {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+      transform: translateY(-2px);
+    }
+
+    /* Event info section */
+    .event-info {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+      border: 1px solid rgba(102, 126, 234, 0.1);
+      border-radius: 8px;
+      padding: 12px;
+      margin: 12px 0;
+      font-size: 13px;
+    }
+    .event-info .event-title {
+      font-weight: 600;
+      color: #667eea;
+      margin-bottom: 8px;
+    }
+    .event-info .event-desc {
+      color: #6b7280;
+      font-size: 12px;
+      margin-bottom: 4px;
     }
 
     /* featured small horizontal product list */
@@ -473,17 +536,42 @@ header.nav {
       100% { transform: rotate(360deg); }
     }
     
+    .error-message {
+      background: #fee;
+      border: 1px solid #fcc;
+      color: #c66;
+      padding: 16px;
+      border-radius: 8px;
+      margin: 16px 0;
+    }
+    
+    .success-message {
+      background: #efe;
+      border: 1px solid #cfc;
+      color: #6c6;
+      padding: 16px;
+      border-radius: 8px;
+      margin: 16px 0;
+    }
+    
     @media(max-width: 768px) {
         .navlinks {
-            display: none; /* Hide nav links on small screens for simplicity */
+            display: none; 
         }
         header.nav {
           padding: 16px 20px;
         }
+        .trend-card .controls {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .event-btn {
+          width: 100%;
+          justify-content: center;
+        }
     }
   </style>
 </head>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
 <body>
   <div class="full-width-container">
@@ -537,8 +625,6 @@ header.nav {
 
   <div class="full-width-container hero-container">
     <div class="content-container">
-      <!-- HERO -->
-
       <section class="hero" id="home">
         <h1>Shop by Vibe, Not Keywords ✨</h1>
         <p>Describe your mood, moment, or aesthetic and let AI find your perfect fit.</p>
@@ -568,8 +654,8 @@ header.nav {
 
           <div class="controls" style="margin-top:12px;">
             <input id="vibeInput" type="text" placeholder="outfit for rooftop karaoke night with friends" />
-            <label class="upload-btn">
-              Upload Image
+            <label class="upload-btn" for="imageUpload" style="cursor: pointer;">
+              📷 Upload Image
               <input id="imageUpload" type="file" accept="image/*" style="display:none" onchange="previewUpload(event)" />
             </label>
             <button class="search-btn" onclick="submitVibe()">Find Vibes</button>
@@ -585,8 +671,8 @@ header.nav {
         <aside class="trend-card card" id="trend">
           <div style="display:flex; justify-content:space-between; align-items:center">
             <div>
-              <div class="section-title">Trending Radar</div>
-              <div class="muted">Hyper-local trends for your city</div>
+              <div class="section-title">Trend Radar</div>
+              <div class="muted">Trends & event shopping for your city</div>
             </div>
             <div class="small muted">Live demo</div>
           </div>
@@ -599,16 +685,36 @@ header.nav {
               <option>Lucknow</option>
               <option>Indore</option>
               <option>Jaipur</option>
+              <option>Kolkata</option>
+              <option>Chennai</option>
+              <option>Hyderabad</option>
+              <option>Pune</option>
             </select>
+            <button id="eventSearchBtn" class="event-btn" onclick="searchLocationEvents()">
+              🎭 Event Shopping
+            </button>
           </div>
 
-          <div style="margin-top:12px" id="chipsArea">
+          <!-- Event Information Section -->
+          <div id="eventInfo" style="margin-top:16px; display:none;">
+            <div class="event-info">
+              <div class="event-title">📅 Upcoming Events in <span id="currentCity">Selected City</span>:</div>
+              <div id="eventsList"></div>
             </div>
+          </div>
+
+          <!-- Event Chips -->
+          <div id="eventChips" style="margin-top:12px;">
+          </div>
+
+          <!-- Regular Trending Vibes -->
+          <div style="margin-top:12px" id="chipsArea">
+          </div>
 
           <div style="margin-top:18px">
             <div class="section-title" style="font-size:16px">Featured Products</div>
             <div id="featuredRow" class="featured-row">
-              </div>
+            </div>
           </div>
         </aside>
       </main>
@@ -616,43 +722,96 @@ header.nav {
   </div>
 
   <script>
-    const BACKEND_URL = 'http://localhost:8000'; // Define the backend URL
+    // FIXED: Updated backend URL configuration
+    const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+      ? 'http://localhost:8000' 
+      : 'http://localhost:8000'; 
 
-    // Render product cards from a list of products
-    function renderProducts(products){
-      const grid = document.getElementById('resultsGrid');
-      grid.innerHTML = ''; // Clear previous results
-      if (products.length === 0) {
-        grid.innerHTML = '<div style="text-align:center; padding: 20px;">No products found for this vibe. Try a different query!</div>';
+    // Helper function to escape HTML
+    function escapeHtml(unsafe) {
+      if (!unsafe) return '';
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // Show error message
+    function showError(message, containerId = 'resultsGrid') {
+      const container = document.getElementById(containerId);
+      container.innerHTML = `<div class="error-message">⚠️ ${message}</div>`;
+    }
+
+    // Show success message
+    function showSuccess(message, containerId = 'resultsGrid') {
+      const container = document.getElementById(containerId);
+      container.innerHTML = `<div class="success-message">✅ ${message}</div>`;
+    }
+
+    // Show loading spinner
+    function showLoading(containerId = 'resultsGrid') {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '<div class="loading-spinner" style="display:block;"></div>';
+    }
+
+    // FIXED: Render product cards from a list of products
+    function renderProducts(products, containerId = 'resultsGrid') {
+      const grid = document.getElementById(containerId);
+      grid.innerHTML = ''; 
+
+      if (!products || products.length === 0) {
+        grid.innerHTML = '<div style="text-align:center; padding: 20px; color: #666;">No products found for this search. Try a different query!</div>';
         return;
       }
-      products.forEach(p=>{
+
+      products.forEach(p => {
         const card = document.createElement('div');
         card.className = 'product';
+        
+        const imageUrl = p.image_url || p.image || 'https://placehold.co/400x400/f5f5f5/999?text=No+Image';
+        
+        let vibeTagsText = '';
+        if (p.vibe_tags) {
+          vibeTagsText = Array.isArray(p.vibe_tags) ? p.vibe_tags.join(', ') : p.vibe_tags;
+        }
+        
         card.innerHTML = `
-          <div class="imgwrap"><img src="${p.image}" alt="${p.title}" /></div>
+          <div class="imgwrap">
+            <img src="${imageUrl}" alt="${escapeHtml(p.title || 'Product')}" onerror="this.src='https://placehold.co/400x400/f5f5f5/999?text=No+Image'" />
+          </div>
           <div class="meta">
-            <h4>${escapeHtml(p.title)}</h4>
-            <div class="price">₹ ${p.price}</div>
-            <div class="tags">${escapeHtml(p.tags)}</div>
+            <h4>${escapeHtml(p.title || 'Untitled Product')}</h4>
+            <div class="price">₹${p.price || 'N/A'}</div>
+            <div class="tags">${escapeHtml(vibeTagsText)}</div>
           </div>
         `;
         grid.appendChild(card);
       });
     }
 
-    // Render featured product cards
-    function renderFeatured(products){
-      const row = document.getElementById('featuredRow');
+    // FIXED: Render featured product cards
+    function renderFeatured(products, containerId = 'featuredRow') {
+      const row = document.getElementById(containerId);
       row.innerHTML = '';
-      products.forEach(p=>{
+      
+      if (!products || products.length === 0) {
+        row.innerHTML = '<div style="padding: 20px; color: #666;">No featured products available</div>';
+        return;
+      }
+      
+      products.forEach(p => {
         const el = document.createElement('div');
         el.className = 'featured-item';
+        
+        const imageUrl = p.image_url || p.image || 'https://placehold.co/180x140/f5f5f5/999?text=No+Image';
+        
         el.innerHTML = `
-          <img src="${p.image}" alt="${p.title}" />
+          <img src="${imageUrl}" alt="${escapeHtml(p.title || 'Product')}" onerror="this.src='https://placehold.co/180x140/f5f5f5/999?text=No+Image'" />
           <div class="ft-meta">
-            <div style="font-weight:700">${p.title}</div>
-            <div class="small muted">₹ ${p.price}</div>
+            <div style="font-weight:700">${escapeHtml(p.title || 'Product')}</div>
+            <div class="small muted">₹${p.price || 'N/A'}</div>
           </div>
         `;
         row.appendChild(el);
@@ -660,15 +819,22 @@ header.nav {
     }
 
     // Render a list of chips
-    function renderChips(chips){
+    function renderChips(chips) {
       const area = document.getElementById('chipsArea');
       area.innerHTML = '';
+      
+      if (!chips || chips.length === 0) {
+        area.innerHTML = '<div class="muted">No trending vibes available</div>';
+        return;
+      }
+      
       const wrap = document.createElement('div');
       wrap.className = 'chips';
-      chips.forEach(c=>{
+      
+      chips.forEach(c => {
         const chip = document.createElement('div');
         chip.className = 'chip';
-        chip.textContent = '#'+c;
+        chip.textContent = '#' + c;
         chip.onclick = () => {
           document.getElementById('vibeInput').value = c;
           submitVibe();
@@ -678,152 +844,403 @@ header.nav {
       area.appendChild(wrap);
     }
 
-    // escape to avoid accidental HTML injection
-    function escapeHtml(unsafe){ return unsafe.replace(/[&<"']/g, m => ({'&':'&amp;','<':'&lt;','"':'&quot;',"'":'&#039;'}[m])); }
-
-    // --- Vibe search function that calls the backend API ---
-    async function submitVibe(){
-  const vibeText = document.getElementById('vibeInput').value.trim();
-  if(!vibeText){
-    const grid = document.getElementById('resultsGrid');
-    grid.innerHTML = '<div style="text-align:center; padding: 20px;">Please enter a vibe to search.</div>';
-    console.error('Please enter a vibe (e.g., "cozy cottagecore picnic")');
-    return;
-  }
-
-  // Show loading spinner
-  const grid = document.getElementById('resultsGrid');
-  grid.innerHTML = '<div class="loading-spinner" style="display:block;"></div>';
-  
-  const btn = document.querySelector('.vibe-card .search-btn');
-  const prev = btn.innerText;
-  btn.innerText = 'Searching...'; 
-  btn.disabled = true;
-
-  try{
-    const res = await fetch(BACKEND_URL + '/search/vibe', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({vibe: vibeText, max_results: 9})
-    });
-    
-    if (!res.ok) {
-      throw new Error(`HTTP error! Status: ${res.status}`);
-      console.log('Backend server error:', res.statusText);
-    }
-    
-    const data = await res.json();
-    console.log('Received data:', data);
-    if(data && data.products) {
-      // Map backend product data to a format the renderer can use
-      const prods = data.products.map(p => {
-        // Correctly handle vibe_tags by converting the array to a string
-        const tags = Array.isArray(p.vibe_tags) ? p.vibe_tags.join(', ') : p.vibe_tags;
-        
-        return {
-          title: p.title, 
-          price: p.price, 
-          tags: p.vibe_tags || p.tags || '',  // Use the new string variable here
-          image: p.image_url || p.image || 'https://placehold.co/400x400/fff/ccc?text=No+Image'
+    // NEW: Render event chips
+    function renderEventChips(events) {
+      const area = document.getElementById('eventChips');
+      area.innerHTML = '';
+      
+      if (!events || events.length === 0) {
+        return;
+      }
+      
+      const wrap = document.createElement('div');
+      wrap.style.display = 'flex';
+      wrap.style.gap = '8px';
+      wrap.style.flexWrap = 'wrap';
+      wrap.style.marginBottom = '12px';
+      
+      events.forEach(event => {
+        const chip = document.createElement('div');
+        chip.className = 'event-chip';
+        chip.textContent = `🎭 ${event.name || event}`;
+        chip.onclick = () => {
+          // When clicking an event chip, search for that event style
+          if (event.style_keywords && event.style_keywords.length > 0) {
+            document.getElementById('vibeInput').value = event.style_keywords.join(' ');
+            submitVibe();
+          }
         };
+        wrap.appendChild(chip);
       });
-      renderProducts(prods);
-    } else {
-      renderProducts([]);
-    }
-  }catch(err){
-    console.error('Error fetching results:', err);
-    grid.innerHTML = '<div style="text-align:center; padding: 20px;">Error fetching products. Please ensure the backend server is running.</div>';
-  } finally {
-    btn.innerText = prev; 
-    btn.disabled = false;
-  }
-}
-
-    function triggerSearch(){
-      const q = document.getElementById('mainSearch').value;
-      document.getElementById('vibeInput').value = q;
-      submitVibe();
-      window.location.hash = '#vibe';
+      area.appendChild(wrap);
     }
 
-    // --- Load trends and featured products from the backend ---
-    async function loadTrends(){
-      const chipsArea = document.getElementById('chipsArea');
-      chipsArea.innerHTML = '<div class="loading-spinner" style="display:block;"></div>';
+    // NEW: Location-based event search
+    async function searchLocationEvents() {
+      const citySelect = document.getElementById('citySelect');
+      const location = citySelect.value;
+      
+      const btn = document.getElementById('eventSearchBtn');
+      const prevText = btn.innerHTML;
+      btn.innerHTML = '🔍 Analyzing...'; 
+      btn.disabled = true;
 
-      // Fetch trending vibes
       try {
-        const trendsRes = await fetch(BACKEND_URL + '/trending');
-        const trendsData = await trendsRes.json();
-        if(trendsData && trendsData.trending_vibes) {
-          renderChips(trendsData.trending_vibes.slice(0, 5));
-        }
-      } catch(err) {
-        console.error('Error fetching trending vibes:', err);
-        chipsArea.innerHTML = '<div class="muted">Failed to load trends.</div>';
-      }
-
-      // Fetch featured products (using a popular vibe as a query)
-      try {
-        const featuredRes = await fetch(BACKEND_URL + '/search/vibe', {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({vibe: 'minimalist', max_results: 4})
+        console.log('📍 Searching for location events:', location);
+        
+        const response = await fetch(BACKEND_URL + '/search/location-events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            location: location,
+            max_results: 6
+          })
         });
-        const featuredData = await featuredRes.json();
-        if(featuredData && featuredData.products) {
-          const prods = featuredData.products.map(p => ({
-            title: p.title, 
-            price: p.price, 
-            tags: p.vibe_tags || p.tags || '', 
-            image: p.image_url || p.image || 'https://placehold.co/400x400/fff/ccc?text=No+Image'
-          }));
-          renderFeatured(prods);
+        
+        if (!response.ok) {
+          throw new Error(`Backend responded with status: ${response.status} ${response.statusText}`);
         }
-      } catch(err) {
-        console.error('Error fetching featured products:', err);
-        document.getElementById('featuredRow').innerHTML = '<div class="muted">Failed to load featured products.</div>';
+        
+        const data = await response.json();
+        console.log('✅ Received location event results:', data);
+        
+        // Show event information
+        const eventInfo = document.getElementById('eventInfo');
+        const eventsList = document.getElementById('eventsList');
+        const currentCity = document.getElementById('currentCity');
+        
+        currentCity.textContent = location;
+        
+        if (data.events && data.events.length > 0) {
+          eventInfo.style.display = 'block';
+          eventsList.innerHTML = '';
+          
+          data.events.slice(0, 3).forEach(event => {
+            const eventDiv = document.createElement('div');
+            eventDiv.style.marginBottom = '8px';
+            eventDiv.innerHTML = `
+              <div class="event-desc">
+                <strong>${event.name}</strong> ${event.type ? `(${event.type})` : ''}
+              </div>
+              <div style="font-size: 11px; color: #9ca3af;">
+                ${event.description || 'Local cultural event'}
+              </div>
+            `;
+            eventsList.appendChild(eventDiv);
+          });
+          
+          // Render event chips
+          renderEventChips(data.events.slice(0, 4));
+        } else {
+          eventInfo.style.display = 'none';
+        }
+        
+        // Show seasonal note if available
+        if (data.seasonal_note) {
+          const seasonalDiv = document.createElement('div');
+          seasonalDiv.style.fontSize = '12px';
+          seasonalDiv.style.color = '#6b7280';
+          seasonalDiv.style.marginTop = '8px';
+          seasonalDiv.style.fontStyle = 'italic';
+          seasonalDiv.innerHTML = `💡 ${data.seasonal_note}`;
+          eventsList.appendChild(seasonalDiv);
+        }
+        
+        if (data && data.products && data.products.length > 0) {
+          renderFeatured(data.products, 'featuredRow');
+          console.log(`🎭 Found ${data.products.length} products for events in ${location}`);
+        } else {
+          document.getElementById('featuredRow').innerHTML = 
+            '<div style="padding: 20px; color: #666; text-align: center; font-size: 13px;">No suitable products found for events in this location.</div>';
+        }
+        
+      } catch (error) {
+        console.error('❌ Error during location event search:', error);
+        
+        // Hide event info on error
+        document.getElementById('eventInfo').style.display = 'none';
+        document.getElementById('eventChips').innerHTML = '';
+        
+        if (error.message.includes('Failed to fetch')) {
+          document.getElementById('featuredRow').innerHTML = 
+            '<div style="padding: 16px; color: #ef4444; text-align: center; font-size: 13px;">Cannot connect to server. Please check if backend is running.</div>';
+        } else {
+          document.getElementById('featuredRow').innerHTML = 
+            '<div style="padding: 16px; color: #ef4444; text-align: center; font-size: 13px;">Event search failed. Please try again.</div>';
+        }
+      } finally {
+        btn.innerHTML = prevText; 
+        btn.disabled = false;
       }
     }
 
-    async function searchByImage() {
-  const fileInput = document.getElementById("imageInput");
-  if (!fileInput.files.length) return alert("Please upload an image!");
-
-  const formData = new FormData();
-  formData.append("file", fileInput.files[0]);
-
-  const response = await fetch(`${API_BASE}/search/image`, {
-    method: "POST",
-    body: formData
-  });
-  
-  const data = await response.json();
-  renderProducts(data.products);
-}
-
-
-    // Initial page load: load trends and an initial search result
-    document.addEventListener('DOMContentLoaded', () => {
-      loadTrends();
-      // Perform an initial vibe search for "bohemian" to populate the grid
-      document.getElementById('vibeInput').value = 'bohemian';
-      submitVibe();
-    });
-
-    // --- image upload preview (no server call) ---
-    function previewUpload(e){
-      const file = e.target.files[0];
-      if(!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev)=>{
-        // show first product grid replaced by uploaded image (demo)
-        const preview = {id:999, title:"Your inspiration image", price:"", tags:"inspiration", image:ev.target.result};
-        renderProducts([preview]);
+    // FIXED: Vibe search function with better error handling
+    async function submitVibe() {
+      const vibeText = document.getElementById('vibeInput').value.trim();
+      if (!vibeText) {
+        showError('Please enter a vibe to search (e.g., "cozy cottagecore picnic")');
+        return;
       }
+
+      showLoading();
+      
+      const btn = document.querySelector('.vibe-card .search-btn');
+      const prevText = btn.innerText;
+      btn.innerText = 'Searching...'; 
+      btn.disabled = true;
+
+      try {
+        console.log('🔍 Searching for vibe:', vibeText);
+        
+        const response = await fetch(BACKEND_URL + '/search/vibe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            vibe: vibeText, 
+            max_results: 9
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Backend responded with status: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Received search results:', data);
+        
+        if (data && data.products && data.products.length > 0) {
+          renderProducts(data.products);
+          console.log(`📦 Rendered ${data.products.length} products`);
+        } else {
+          showError('No products found for this vibe. Try different keywords like "bohemian", "minimalist", or "vintage".');
+        }
+        
+      } catch (error) {
+        console.error('❌ Error during vibe search:', error);
+        
+        if (error.message.includes('Failed to fetch')) {
+          showError('Cannot connect to the backend server. Please ensure the server is running on http://localhost:8000');
+        } else if (error.message.includes('CORS')) {
+          showError('CORS error: Backend server needs to allow requests from this origin.');
+        } else {
+          showError(`Search failed: ${error.message}`);
+        }
+      } finally {
+        btn.innerText = prevText; 
+        btn.disabled = false;
+      }
+    }
+
+    // FIXED: Main search trigger
+    function triggerSearch() {
+      const query = document.getElementById('mainSearch').value.trim();
+      if (!query) {
+        showError('Please enter a search query');
+        return;
+      }
+      
+      document.getElementById('vibeInput').value = query;
+      submitVibe();
+      
+      document.getElementById('vibe').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // FIXED: Load trends with better error handling
+    async function loadTrends() {
+      const chipsArea = document.getElementById('chipsArea');
+      const featuredRow = document.getElementById('featuredRow');
+      
+      chipsArea.innerHTML = '<div class="loading-spinner" style="display:block;"></div>';
+      featuredRow.innerHTML = '<div class="loading-spinner" style="display:block;"></div>';
+
+      try {
+        console.log('📈 Loading trending data...');
+        
+        const trendsResponse = await fetch(BACKEND_URL + '/trending');
+        
+        if (!trendsResponse.ok) {
+          throw new Error(`Trends API responded with status: ${trendsResponse.status}`);
+        }
+        
+        const trendsData = await trendsResponse.json();
+        console.log('✅ Received trends data:', trendsData);
+        
+        if (trendsData && trendsData.trending_vibes) {
+          renderChips(trendsData.trending_vibes.slice(0, 6));
+        } else {
+          chipsArea.innerHTML = '<div class="muted">No trending vibes available</div>';
+        }
+        
+        if (trendsData && trendsData.featured_products) {
+          renderFeatured(trendsData.featured_products.slice(0, 4));
+        } else {
+          featuredRow.innerHTML = '<div class="muted">No featured products available</div>';
+        }
+        
+      } catch (error) {
+        console.error('❌ Error loading trends:', error);
+        chipsArea.innerHTML = '<div class="error-message">Failed to load trending vibes</div>';
+        featuredRow.innerHTML = '<div class="error-message">Failed to load featured products</div>';
+      }
+    }
+
+    // FIXED: Image search functionality
+    async function searchByImage() {
+      const fileInput = document.getElementById("imageUpload");
+      if (!fileInput.files.length) {
+        showError("Please upload an image!");
+        return;
+      }
+
+      showLoading();
+      
+      // Update button state
+      const uploadBtn = document.querySelector('.upload-btn');
+      const originalText = uploadBtn.innerHTML;
+      uploadBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analyzing...';
+      uploadBtn.style.pointerEvents = 'none';
+      
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+      formData.append("max_results", "9"); // Add max results parameter
+
+      try {
+        console.log('📷 Starting image search...');
+        
+        const response = await fetch(`${BACKEND_URL}/search/image`, {
+          method: "POST",
+          body: formData
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Image search failed: ${response.status} - ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Image search response:', data);
+        
+        if (data && data.products && data.products.length > 0) {
+          renderProducts(data.products);
+          console.log(`🎨 Found ${data.products.length} products matching your image style`);
+          
+          // Show analysis if available
+          if (data.analysis && data.analysis.vibe_keywords) {
+            console.log('🔍 Detected vibes:', data.analysis.vibe_keywords.join(', '));
+          }
+        } else {
+          showError("No products found matching the uploaded image. Try a different image with clear fashion/style elements.");
+        }
+        
+      } catch (error) {
+        console.error('❌ Image search error:', error);
+        
+        // Provide specific error messages
+        if (error.message.includes('503')) {
+          showError('Image search requires Gemini API. Please check if GEMINI_API_KEY is configured.');
+        } else if (error.message.includes('Failed to fetch')) {
+          showError('Cannot connect to the backend server. Please ensure the server is running.');
+        } else {
+          showError(`Image search failed: ${error.message}`);
+        }
+      } finally {
+        // Restore button state
+        uploadBtn.innerHTML = originalText;
+        uploadBtn.style.pointerEvents = 'auto';
+      }
+    }
+
+    // FIXED: Image upload preview and automatic search
+    function previewUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        showError('Please select a valid image file (JPG, PNG, etc.)');
+        return;
+      }
+      
+      // Check file size (optional - limit to 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        showError('Image too large. Please select an image smaller than 5MB.');
+        return;
+      }
+      
+      console.log('📷 Image uploaded:', file.name, 'Size:', (file.size / 1024 / 1024).toFixed(2) + 'MB');
+      
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        // Show preview with uploaded image
+        const preview = {
+          id: 999, 
+          title: "📸 Your inspiration image", 
+          price: "", 
+          vibe_tags: "analyzing style...", 
+          image_url: ev.target.result
+        };
+        renderProducts([preview]);
+        
+        // Show loading message
+        setTimeout(() => {
+          showSuccess('Image uploaded successfully! Analyzing style and finding matches...');
+        }, 100);
+        
+        // Automatically trigger image search after a short delay
+        setTimeout(() => {
+          searchByImage();
+        }, 500);
+      };
+      
+      reader.onerror = () => {
+        showError('Error reading the image file. Please try again.');
+      };
+      
       reader.readAsDataURL(file);
     }
+
+    // FIXED: Enhanced page initialization
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('🚀 Initializing Myntra Vibe Shopping...');
+      
+      // Test backend connectivity first
+      try {
+        const healthResponse = await fetch(BACKEND_URL + '/health');
+        if (healthResponse.ok) {
+          const healthData = await healthResponse.json();
+          console.log('✅ Backend is healthy:', healthData);
+        }
+      } catch (error) {
+        console.warn('⚠️ Backend health check failed:', error);
+        showError('Backend server might not be running. Please start the server and refresh the page.');
+      }
+      
+      // Load initial data
+      await loadTrends();
+      
+      // Perform initial search
+      document.getElementById('vibeInput').value = 'bohemian';
+      await submitVibe();
+      
+      console.log('✅ App initialization complete');
+    });
+
+    // Add Enter key support for search inputs
+    document.getElementById('mainSearch').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        triggerSearch();
+      }
+    });
+
+    document.getElementById('vibeInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        submitVibe();
+      }
+    });
   </script>
 </body>
 </html>
