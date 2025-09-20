@@ -37,7 +37,7 @@
 }
    body {
   margin: 0;
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Poppins', sans-serif;
   color: #111827;
   background: #fafafa;
   -webkit-font-smoothing: antialiased;
@@ -76,7 +76,7 @@ header.nav {
     background-color: #fff;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     z-index: 10;
-    font-family: 'Assistant', sans-serif; 
+    font-family: 'Poppins', sans-serif; 
 }
 
 .desktop-preHeaderContent {
@@ -121,20 +121,31 @@ header.nav {
 }
 
 .desktop-navbar a {
-    text-transform: uppercase;
-    font-weight: 700;
-    color: #3e4152;
-    font-size: 14px;
-    letter-spacing: .3px;
-    text-decoration: none;
-    padding-bottom: 25px;
-    border-bottom: 3px solid transparent; 
-    transition: border-bottom .2s ease;
+  position: relative;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #282c3f;
+  font-size: 17px;
+  letter-spacing: .3px;
+  text-decoration: none;
+  padding-bottom: 25px;
 }
 
-.desktop-navbar a:hover {
-    border-bottom: 3px solid var(--myntra-pink);
+.desktop-navbar a::after {
+  content: "";
+  position: absolute;
+  bottom: 0px;
+  left: 0;
+  width: 0%;
+  height: 3px;
+  background: var(--myntra-pink);
+  transition: width 0.3s ease;
 }
+
+.desktop-navbar a:hover::after {
+  width: 100%;
+}
+
 
 .desktop-query {
     margin-top: -10px;
@@ -147,7 +158,7 @@ header.nav {
     padding: 10px 15px;
     border: 1px solid #d4d5d9;
     background-color: #f5f5f6;
-    border-radius: 4px;
+    border-radius: 25px;
     outline: none;
     font-size: 14px;
 }
@@ -249,6 +260,21 @@ header.nav {
       align-items: center; 
       justify-content: center; 
     }
+    /* .hero-container::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.4));
+  z-index: 1;
+}
+.hero {
+  position: relative;
+  z-index: 2;
+}
+.hero h1 {
+  text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+} */
+
      
     .hero{
       border-radius:20px;
@@ -300,11 +326,19 @@ header.nav {
       border:0;
       transition: background 0.3s ease, transform 0.2s ease;
       font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #ff3f6c, #ff6584);
+      border: none;
+      box-shadow: 0 4px 12px rgba(255,63,108,0.2);
     }
     .search-btn:hover {
       background: #e6395e;
-      transform: translateY(-2px);
+      transform: translateY(-2px) scale(1.03);
+
     }
+    .search-btn:hover, .event-btn:hover {
+  background: #e6395e; /* darker pink hover */
+  transform: none; /* Myntra buttons don’t float */
+}
 
     /* Main content layout */
     .two-col{
@@ -323,6 +357,12 @@ header.nav {
       border-radius:var(--card-radius);
       box-shadow:var(--shadow);
     }
+    .card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+}
+
 
     /* Vibe Search area */
     .vibe-card .controls{
@@ -382,7 +422,8 @@ header.nav {
       box-shadow: 0 18px 40px rgba(11,22,45,0.08);
     }
     .product .imgwrap{height:250px; background:#fafafa; display:flex; align-items:center; justify-content:center}
-    .product img{width:100%; height:100%; object-fit:cover}
+    .product img{width:100%; height:100%; object-fit:cover;border-radius: 12px 12px 0 0;transition: transform 0.3s ease;}
+    .product:hover img {transform: scale(1.05);}
     .product .meta{padding:16px; font-family: 'Inter', sans-serif;}
     .product h4{margin:0 0 8px; font-size:16px; font-weight:700;}
     .price{color:#111827; font-weight:800; margin-bottom:10px; font-size:17px;}
@@ -438,7 +479,8 @@ header.nav {
 
     .chips{display:flex; gap:12px; flex-wrap:wrap; transition: all 0.3s ease;}
     .chip{
-      background:#fff0f4; 
+  
+      background: linear-gradient(135deg, #fff0f4, #ffe6eb);
       border:1px solid rgba(255,63,108,0.12); 
       color:var(--accent); 
       padding:10px 16px; 
@@ -517,7 +559,7 @@ header.nav {
     .featured-item .ft-meta{padding:10px 12px}
 
     /* Spacing and Utilities */
-    .section-title{font-size:22px; font-weight:800; margin-bottom:14px; font-family: 'Montserrat', sans-serif;}
+    .section-title{font-size:22px; font-weight:800; margin-bottom:14px; font-family: 'Poppins', sans-serif;}
     .muted{color:var(--muted); font-family: 'Inter', sans-serif;}
     
     .loading-spinner {
@@ -570,6 +612,9 @@ header.nav {
           justify-content: center;
         }
     }
+    * {
+  transition: all 0.2s ease-in-out;
+}
   </style>
 </head>
 
@@ -949,11 +994,26 @@ header.nav {
         }
         
         if (data && data.products && data.products.length > 0) {
-          renderFeatured(data.products, 'featuredRow');
+          // Show products in a grid format within the trend radar section
+const trendCard = document.querySelector('.trend-card');
+let resultsContainer = document.getElementById('trendResults');
+if (!resultsContainer) {
+  resultsContainer = document.createElement('div');
+  resultsContainer.id = 'trendResults';
+  resultsContainer.innerHTML = '<div class="section-title" style="font-size:16px; margin-top:18px;">Event Products</div><div id="trendGrid" class="grid"></div>';
+  trendCard.appendChild(resultsContainer);
+}
+renderProducts(data.products, 'trendGrid');
           console.log(`🎭 Found ${data.products.length} products for events in ${location}`);
         } else {
-          document.getElementById('featuredRow').innerHTML = 
-            '<div style="padding: 20px; color: #666; text-align: center; font-size: 13px;">No suitable products found for events in this location.</div>';
+          let resultsContainer = document.getElementById('trendResults');
+if (!resultsContainer) {
+  const trendCard = document.querySelector('.trend-card');
+  resultsContainer = document.createElement('div');
+  resultsContainer.id = 'trendResults';
+  trendCard.appendChild(resultsContainer);
+}
+resultsContainer.innerHTML = '<div style="padding: 20px; color: #666; text-align: center; font-size: 13px;">No suitable products found for events in this location.</div>';
         }
         
       } catch (error) {
@@ -964,12 +1024,24 @@ header.nav {
         document.getElementById('eventChips').innerHTML = '';
         
         if (error.message.includes('Failed to fetch')) {
-          document.getElementById('featuredRow').innerHTML = 
-            '<div style="padding: 16px; color: #ef4444; text-align: center; font-size: 13px;">Cannot connect to server. Please check if backend is running.</div>';
+          let resultsContainer = document.getElementById('trendResults');
+if (!resultsContainer) {
+  const trendCard = document.querySelector('.trend-card');
+  resultsContainer = document.createElement('div');
+  resultsContainer.id = 'trendResults';
+  trendCard.appendChild(resultsContainer);
+}
+resultsContainer.innerHTML = '<div style="padding: 16px; color: #ef4444; text-align: center; font-size: 13px;">Cannot connect to server. Please check if backend is running.</div>';
         } else {
-          document.getElementById('featuredRow').innerHTML = 
-            '<div style="padding: 16px; color: #ef4444; text-align: center; font-size: 13px;">Event search failed. Please try again.</div>';
-        }
+          let resultsContainer = document.getElementById('trendResults');
+  if (!resultsContainer) {
+    const trendCard = document.querySelector('.trend-card');
+    resultsContainer = document.createElement('div');
+    resultsContainer.id = 'trendResults';
+    trendCard.appendChild(resultsContainer);
+  }
+  resultsContainer.innerHTML = '<div style="padding: 16px; color: #ef4444; text-align: center; font-size: 13px;">Event search failed. Please try again.</div>';
+}
       } finally {
         btn.innerHTML = prevText; 
         btn.disabled = false;
@@ -1153,6 +1225,40 @@ header.nav {
         uploadBtn.style.pointerEvents = 'auto';
       }
     }
+
+    async function searchEventStyleInTrendRadar(styleKeywords) {
+  try {
+    const response = await fetch(BACKEND_URL + '/search/vibe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        vibe: styleKeywords.join(' '), 
+        max_results: 6 
+      })
+    });
+    
+    const data = await response.json();
+    
+    // Ensure results container exists in trend radar
+    const trendCard = document.querySelector('.trend-card');
+    let resultsContainer = document.getElementById('trendResults');
+    if (!resultsContainer) {
+      resultsContainer = document.createElement('div');
+      resultsContainer.id = 'trendResults';
+      resultsContainer.innerHTML = '<div class="section-title" style="font-size:16px; margin-top:18px;">Event Products</div><div id="trendGrid" class="grid"></div>';
+      trendCard.appendChild(resultsContainer);
+    }
+    
+    // Update the title
+    resultsContainer.querySelector('.section-title').textContent = 'Event Style Products';
+    
+    if (data.products && data.products.length > 0) {
+      renderProducts(data.products, 'trendGrid');
+    }
+  } catch (error) {
+    console.error('Event style search failed:', error);
+  }
+}
 
     // FIXED: Image upload preview and automatic search
     function previewUpload(e) {

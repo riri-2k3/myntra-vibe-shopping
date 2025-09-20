@@ -295,8 +295,14 @@ Catalog:
         for pid in product_ids:
             if pid in products_dict:
                 product = products_dict[pid].copy()
-                product['similarity_score'] = 0.9  # Gemini only, mock score
-                matched_products.append(product)
+                # Ensure all numeric values are JSON-safe
+                product['similarity_score'] = 0.9
+                # Clean any potential NaN/inf values
+                for key, value in product.items():
+                    if isinstance(value, float):
+                        if not (value == value and abs(value) != float('inf')):  # Check for NaN/inf
+                            product[key] = 0.0
+            matched_products.append(product)
         
         return matched_products[:request.max_results]
         
