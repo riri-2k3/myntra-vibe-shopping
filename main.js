@@ -248,6 +248,51 @@
         console.log('✅ Image preview opened');
     }
 
+    async function searchLocationEvents() {
+  console.log('📍 Searching location events...');
+  
+  const locationInput = document.getElementById('locationInput');
+  if (!locationInput) {
+    showError('Location input not found');
+    return;
+  }
+
+  const locationText = locationInput.value.trim();
+  if (!locationText) {
+    showError('Please enter a location to search events');
+    return;
+  }
+
+  showLoading();
+
+  try {
+    const response = await fetch(BACKEND_URL + '/search/location-events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ location: locationText })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('📡 Location events data:', data);
+
+    const products = data.products || data.results || [];
+    if (products.length > 0) {
+      renderProducts(products);
+    } else {
+      showError('No events found for this location');
+    }
+  } catch (error) {
+    console.error('❌ Location search failed:', error);
+    showError(`Search failed: ${error.message}`);
+  }
+}
+window.searchLocationEvents = searchLocationEvents;
+
+
     // Function to close image preview
     function closeImagePreview() {
         const overlay = document.getElementById('imagePreviewOverlay');
@@ -318,92 +363,225 @@
         }
     }
 
-    // ENHANCED: Product rendering with image preview
-    // ENHANCED: Product rendering with image preview
-function renderProducts(products, containerId = 'resultsGrid') {
-    console.log('🎯 === RENDER PRODUCTS WITH PREVIEW ===');
-    console.log('📦 Products:', products);
-    console.log('📦 Container ID:', containerId);
+    // FIXED: Render product cards from a list of products
+    function renderProducts(products, containerId = 'resultsGrid') {
+      const grid = document.getElementById(containerId);
+      grid.innerHTML = ''; 
 
-    const container = document.getElementById(containerId);
-    console.log('📦 Container found:', !!container);
-
-    if (!container) {
-        console.error(`❌ Container '${containerId}' not found!`);
+      if (!products || products.length === 0) {
+        grid.innerHTML = '<div style="text-align:center; padding: 20px; color: #666;">No products found for this search. Try a different query!</div>';
         return;
-    }
+      }
 
-    // Clear container before rendering new products
-    container.innerHTML = '';
-
-    if (!products || products.length === 0) {
-        container.innerHTML = `
-              <div style="text-align: center; padding: 40px; color: #666;">
-                <div style="font-size: 48px; margin-bottom: 16px;">🛍️</div>
-                <div style="font-size: 18px;">No products found</div>
-                <div style="font-size: 14px; color: #999; margin-top: 8px;">Try different keywords</div>
-              </div>
-            `;
-        return;
-    }
-
-    console.log(`✅ Rendering ${products.length} products...`);
-
-    products.forEach((product, index) => {
-        console.log(`🎨 Rendering product ${index + 1}:`, product);
-
-        // Extract product data
-        const title = product.title || product.name || `Product ${index + 1}`;
-        const price = product.price || 'N/A';
-        const imageUrl = product.image_url || product.image || 'https://via.placeholder.com/300x300?text=No+Image';
-
-        let vibeTagsText = '';
-        if (product.vibe_tags) {
-            vibeTagsText = Array.isArray(product.vibe_tags)
-                ? product.vibe_tags.join(', ')
-                : product.vibe_tags;
-        }
-
-        // Create product card with the correct class name "product"
+      products.forEach(p => {
         const card = document.createElement('div');
         card.className = 'product';
-
-        // Build card HTML using the correct class names from style.css
+        
+        const imageUrl = p.image_url || p.image || 'https://placehold.co/400x400/f5f5f5/999?text=No+Image';
+        
+        let vibeTagsText = '';
+        if (p.vibe_tags) {
+          vibeTagsText = Array.isArray(p.vibe_tags) ? p.vibe_tags.join(', ') : p.vibe_tags;
+        }
+        
         card.innerHTML = `
-              <div class="imgwrap">
-                <img
-                  src="${imageUrl}"
-                  alt="${escapeHtml(title)}"
-                  onerror="this.src='https://via.placeholder.com/300x250/f5f5f5/999999?text=No+Image'"
-                />
+          <div class="imgwrap">
+            <img src="${imageUrl}" alt="${escapeHtml(p.title || 'Product')}" onerror="this.src='https://placehold.co/400x400/f5f5f5/999?text=No+Image'" />
+          </div>
+          <div class="meta">
+            <h4>${escapeHtml(p.title || 'Untitled Product')}</h4>
+            <div class="price">₹${p.price || 'N/A'}</div>
+            <div class="tags">${escapeHtml(vibeTagsText)}</div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // FIXED: Render featured product cards
+    function renderFeatured(products, containerId = 'featuredRow') {
+      const row = document.getElementById(containerId);
+      row.innerHTML = '';
+      
+      if (!products || products.length === 0) {
+        row.innerHTML = '<div style="padding: 20px; color: #666;">No featured products available</div>';
+        return;
+      }
+      
+      products.forEach(p => {
+        const el = document.createElement('div');
+        el.className = 'featured-item';
+        
+        const imageUrl = p.image_url || p.image || 'https://placehold.co/180x140/f5f5f5/999?text=No+Image';
+        
+        el.innerHTML = `
+          <img src="${imageUrl}" alt="${escapeHtml(p.title || 'Product')}" onerror="this.src='https://placehold.co/180x140/f5f5f5/999?text=No+Image'" />
+          <div class="ft-meta">
+            <div style="font-weight:700">${escapeHtml(p.title || 'Product')}</div>
+            <div class="small muted">₹${p.price || 'N/A'}</div>
+          </div>
+        `;
+        row.appendChild(el);
+      });
+    }
+
+    // Render a list of chips
+    function renderChips(chips) {
+      const area = document.getElementById('chipsArea');
+      area.innerHTML = '';
+      
+      if (!chips || chips.length === 0) {
+        area.innerHTML = '<div class="muted">No trending vibes available</div>';
+        return;
+      }
+      
+      const wrap = document.createElement('div');
+      wrap.className = 'chips';
+      
+      chips.forEach(c => {
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.textContent = '#' + c;
+        chip.onclick = () => {
+          document.getElementById('vibeInput').value = c;
+          submitVibe();
+        };
+        wrap.appendChild(chip);
+      });
+      area.appendChild(wrap);
+    }
+
+    // NEW: Render event chips
+    function renderEventChips(events) {
+      const area = document.getElementById('eventChips');
+      area.innerHTML = '';
+      
+      if (!events || events.length === 0) {
+        return;
+      }
+      
+      const wrap = document.createElement('div');
+      wrap.style.display = 'flex';
+      wrap.style.gap = '8px';
+      wrap.style.flexWrap = 'wrap';
+      wrap.style.marginBottom = '12px';
+      
+      events.forEach(event => {
+        const chip = document.createElement('div');
+        chip.className = 'event-chip';
+        chip.textContent = `🎭 ${event.name || event}`;
+        chip.onclick = () => {
+          // When clicking an event chip, search for that event style
+          if (event.style_keywords && event.style_keywords.length > 0) {
+            document.getElementById('vibeInput').value = event.style_keywords.join(' ');
+            submitVibe();
+          }
+        };
+        wrap.appendChild(chip);
+      });
+      area.appendChild(wrap);
+    }
+
+    // NEW: Location-based event search
+    async function searchLocationEvents() {
+      const citySelect = document.getElementById('citySelect');
+      const location = citySelect.value;
+      
+      const btn = document.getElementById('eventSearchBtn');
+      const prevText = btn.innerHTML;
+      btn.innerHTML = '🔍 Analyzing...'; 
+      btn.disabled = true;
+
+      try {
+        console.log('📍 Searching for location events:', location);
+        
+        const response = await fetch(BACKEND_URL + '/search/location-events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            location: location,
+            max_results: 6
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Backend responded with status: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Received location event results:', data);
+        
+        // Show event information
+        const eventInfo = document.getElementById('eventInfo');
+        const eventsList = document.getElementById('eventsList');
+        const currentCity = document.getElementById('currentCity');
+        
+        currentCity.textContent = location;
+        
+        if (data.events && data.events.length > 0) {
+          eventInfo.style.display = 'block';
+          eventsList.innerHTML = '';
+          
+          data.events.slice(0, 3).forEach(event => {
+            const eventDiv = document.createElement('div');
+            eventDiv.style.marginBottom = '8px';
+            eventDiv.innerHTML = `
+              <div class="event-desc">
+                <strong>${event.name}</strong> ${event.type ? `(${event.type})` : ''}
               </div>
-              <div class="meta">
-                <h4>${escapeHtml(title)}</h4>
-                <div class="price">₹${price}</div>
-                ${vibeTagsText ? `<div class="tags">${escapeHtml(vibeTagsText)}</div>` : ''}
+              <div style="font-size: 11px; color: #9ca3af;">
+                ${event.description || 'Local cultural event'}
               </div>
             `;
-
-        // Add the click handler for image preview
-        card.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            console.log('🖼️ Product card clicked, opening preview for:', title);
-            openImagePreview(imageUrl, {
-                title: title,
-                price: price,
-                vibe_tags: vibeTagsText
-            });
-        });
-
-        // Append the product card directly to the existing container in the HTML
-        container.appendChild(card);
-        console.log(`✅ Product ${index + 1} added with click handler`);
-    });
-
-    console.log(`🎉 Successfully rendered ${products.length} products with image preview!`);
-}
+            eventsList.appendChild(eventDiv);
+          });
+          
+          // Render event chips
+          renderEventChips(data.events.slice(0, 4));
+        } else {
+          eventInfo.style.display = 'none';
+        }
+        
+        // Show seasonal note if available
+        if (data.seasonal_note) {
+          const seasonalDiv = document.createElement('div');
+          seasonalDiv.style.fontSize = '12px';
+          seasonalDiv.style.color = '#6b7280';
+          seasonalDiv.style.marginTop = '8px';
+          seasonalDiv.style.fontStyle = 'italic';
+          seasonalDiv.innerHTML = `💡 ${data.seasonal_note}`;
+          eventsList.appendChild(seasonalDiv);
+        }
+        
+        if (data && data.products && data.products.length > 0) {
+          renderFeatured(data.products, 'featuredRow');
+          console.log(`🎭 Found ${data.products.length} products for events in ${location}`);
+        } else {
+          document.getElementById('featuredRow').innerHTML = 
+            '<div style="padding: 20px; color: #666; text-align: center; font-size: 13px;">No suitable products found for events in this location.</div>';
+        }
+        
+      } catch (error) {
+        console.error('❌ Error during location event search:', error);
+        
+        // Hide event info on error
+        document.getElementById('eventInfo').style.display = 'none';
+        document.getElementById('eventChips').innerHTML = '';
+        
+        if (error.message.includes('Failed to fetch')) {
+          document.getElementById('featuredRow').innerHTML = 
+            '<div style="padding: 16px; color: #ef4444; text-align: center; font-size: 13px;">Cannot connect to server. Please check if backend is running.</div>';
+        } else {
+          document.getElementById('featuredRow').innerHTML = 
+            '<div style="padding: 16px; color: #ef4444; text-align: center; font-size: 13px;">Event search failed. Please try again.</div>';
+        }
+      } finally {
+        btn.innerHTML = prevText; 
+        btn.disabled = false;
+      }
+    }
 
     // ======================
     // SEARCH FUNCTIONALITY
