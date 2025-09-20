@@ -472,6 +472,94 @@ function renderProducts(products, containerId = 'resultsGrid') {
         }
     }
 
+    // Renders trend hashtags
+// Renders trend hashtags
+function renderChips(trends) {
+    const chipsArea = document.getElementById('chipsArea');
+    if (!chipsArea) return;
+    chipsArea.innerHTML = '';
+
+    // Create the container with the .chips class
+    const chipsContainer = document.createElement('div');
+    chipsContainer.className = 'chips';
+
+    trends.forEach(trend => {
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.textContent = `#${trend}`;
+
+        chip.onclick = () => {
+            document.getElementById('vibeInput').value = trend;
+            submitVibe();
+        };
+        chipsContainer.appendChild(chip);
+    });
+
+    // Append the entire container to the chipsArea
+    chipsArea.appendChild(chipsContainer);
+}
+
+// Renders featured products
+function renderFeatured(products) {
+    const featuredRow = document.getElementById('featuredRow');
+    if (!featuredRow) return;
+    featuredRow.innerHTML = '';
+    products.forEach(product => {
+        const item = document.createElement('div');
+        item.className = 'featured-item';
+        item.innerHTML = `
+            <img src="${product.image_url}" alt="${escapeHtml(product.title)}" />
+            <div class="ft-meta">
+                <div class="small">${escapeHtml(product.title)}</div>
+                <div class="price" style="font-size:14px;">₹${product.price}</div>
+            </div>
+        `;
+        item.onclick = () => {
+            openImagePreview(product.image_url, product);
+        };
+        featuredRow.appendChild(item);
+    });
+}
+
+    // FIXED: Load trends with better error handling
+    async function loadTrends() {
+      const chipsArea = document.getElementById('chipsArea');
+      const featuredRow = document.getElementById('featuredRow');
+      
+      chipsArea.innerHTML = '<div class="loading-spinner" style="display:block;"></div>';
+      featuredRow.innerHTML = '<div class="loading-spinner" style="display:block;"></div>';
+
+      try {
+        console.log('📈 Loading trending data...');
+        
+        const trendsResponse = await fetch(BACKEND_URL + '/trending');
+        
+        if (!trendsResponse.ok) {
+          throw new Error(`Trends API responded with status: ${trendsResponse.status}`);
+        }
+        
+        const trendsData = await trendsResponse.json();
+        console.log('✅ Received trends data:', trendsData);
+        
+        if (trendsData && trendsData.trending_vibes) {
+          renderChips(trendsData.trending_vibes.slice(0, 6));
+        } else {
+          chipsArea.innerHTML = '<div class="muted">No trending vibes available</div>';
+        }
+        
+        if (trendsData && trendsData.featured_products) {
+          renderFeatured(trendsData.featured_products.slice(0, 4));
+        } else {
+          featuredRow.innerHTML = '<div class="muted">No featured products available</div>';
+        }
+        
+      } catch (error) {
+        console.error('❌ Error loading trends:', error);
+        chipsArea.innerHTML = '<div class="error-message">Failed to load trending vibes</div>';
+        featuredRow.innerHTML = '<div class="error-message">Failed to load featured products</div>';
+      }
+    }
+
     // ======================
     // INITIALIZATION
     // ======================
@@ -505,3 +593,8 @@ function renderProducts(products, containerId = 'resultsGrid') {
             submitVibe();
         }
     }, 1000);
+
+    // Add this at the end of your main.js file
+document.addEventListener('DOMContentLoaded', () => {
+  loadTrends();
+});

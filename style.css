@@ -470,6 +470,7 @@ header.nav {
   
       background: linear-gradient(135deg, #fff0f4, #ffe6eb);
       border:1px solid rgba(255,63,108,0.12); 
+      width: fit-content;
       color:var(--accent); 
       padding:10px 16px; 
       border-radius:999px; 
