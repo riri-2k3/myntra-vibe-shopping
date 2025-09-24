@@ -598,8 +598,10 @@ window.searchLocationEvents = searchLocationEvents;
         }
 
         const vibeText = vibeInput.value.trim();
-        if (!vibeText) {
-            showError('Please enter a vibe to search');
+        
+        // Check if we have either text or image
+        if (!vibeText && !uploadedImageFile) {
+            showError('Please enter a vibe or upload an image to search');
             return;
         }
 
@@ -609,39 +611,89 @@ window.searchLocationEvents = searchLocationEvents;
         let prevText = 'Find Vibes';
         if (btn) {
             prevText = btn.innerText;
-            btn.innerText = 'Searching...';
+            btn.innerText = uploadedImageFile ? 'Analyzing Image...' : 'Searching...';
             btn.disabled = true;
         }
 
         try {
-            console.log('📡 Searching for:', vibeText);
+            let response, data;
             
-            const response = await fetch(BACKEND_URL + '/search/vibe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ vibe: vibeText, max_results: 9 })
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+            if (uploadedImageFile) {
+                // Image search
+                console.log('📡 Performing image search with:', uploadedImageFile.name);
+                
+                const formData = new FormData();
+                formData.append('file', uploadedImageFile);
+                formData.append('max_results', '9');
+                
+                response = await fetch(BACKEND_URL + '/search/image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                data = await response.json();
+                console.log('📡 Image search response:', data);
+                
+            } else {
+                // Text search (existing functionality)
+                console.log('📡 Performing text search for:', vibeText);
+                
+                response = await fetch(BACKEND_URL + '/search/vibe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ vibe: vibeText, max_results: 9 })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                data = await response.json();
+                console.log('📡 Text search response:', data);
             }
-            
-            const data = await response.json();
-            console.log('📡 Response data:', data);
             
             const products = data.products || data.results || [];
             console.log('📦 Extracted products:', products);
             
             if (products.length > 0) {
-                showSuccess(`Found ${products.length} products matching "${vibeText}"`);
+                const searchType = uploadedImageFile ? 'image' : 'text';
+                const searchQuery = uploadedImageFile ? uploadedImageFile.name : vibeText;
+                
+                showSuccess(`Found ${products.length} products matching your ${searchType} search`);
                 setTimeout(() => renderProducts(products), 100);
+                
+                // Show analysis info for image search
+                if (uploadedImageFile && data.analysis) {
+                    setTimeout(() => {
+                        const resultsGrid = document.getElementById('resultsGrid');
+                        if (resultsGrid && data.analysis.vibe_keywords) {
+                            const analysisDiv = document.createElement('div');
+                            analysisDiv.style.cssText = 'margin-bottom: 20px; padding: 12px; background: #e8f4fd; border-radius: 6px; border-left: 4px solid #2196f3;';
+                            analysisDiv.innerHTML = `
+                                <div style="font-weight: 600; margin-bottom: 4px;">🤖 AI Analysis:</div>
+                                <div style="font-size: 13px; color: #666;">Detected vibes: ${data.analysis.vibe_keywords.join(', ')}</div>
+                            `;
+                            resultsGrid.insertBefore(analysisDiv, resultsGrid.firstChild);
+                        }
+                    }, 200);
+                }
+                
             } else {
-                showError('No products found. Try different keywords.');
+                showError('No products found. Try a different search.');
             }
             
         } catch (error) {
             console.error('❌ Search failed:', error);
-            showError(`Search failed: ${error.message}`);
+            
+            if (error.message.includes('503')) {
+                showError('Image search requires AI service. Please try text search instead.');
+            } else {
+                showError(`Search failed: ${error.message}`);
+            }
         } finally {
             if (btn) {
                 btn.innerText = prevText;
@@ -776,3 +828,186 @@ function renderFeatured(products) {
 document.addEventListener('DOMContentLoaded', () => {
   loadTrends();
 });
+
+// Global variable to store uploaded image
+let uploadedImageFile = null;
+
+// Handle image upload
+function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    console.log('📷 Image uploaded:', file.name, file.size, 'bytes');
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        showError('Please upload a valid image file');
+        return;
+    }
+    
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+        showError('Image size should be less than 5MB');
+        return;
+    }
+    
+    uploadedImageFile = file;
+    
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const previewSection = document.getElementById('imagePreviewSection');
+        const previewImg = document.getElementById('uploadedImagePreview');
+        
+        if (previewSection && previewImg) {
+            previewImg.src = e.target.result;
+            previewSection.style.display = 'block';
+        }
+    };
+    reader.readAsDataURL(file);
+    
+    // Clear text input when image is uploaded
+    const vibeInput = document.getElementById('vibeInput');
+    if (vibeInput) {
+        vibeInput.value = '';
+        vibeInput.placeholder = 'Image uploaded! Click "Find Vibes" to search by image';
+    }
+}
+
+// Clear image upload
+function clearImageUpload() {
+    uploadedImageFile = null;
+    
+    const previewSection = document.getElementById('imagePreviewSection');
+    const imageUpload = document.getElementById('imageUpload');
+    const vibeInput = document.getElementById('vibeInput');
+    
+    if (previewSection) previewSection.style.display = 'none';
+    if (imageUpload) imageUpload.value = '';
+    if (vibeInput) {
+        vibeInput.placeholder = 'outfit for rooftop karaoke night with friends';
+    }
+    
+    console.log('🗑️ Image upload cleared');
+}
+
+// Enhanced submitVibe function to handle both text and image search
+async function submitVibe() {
+    console.log('🔍 Submit vibe called');
+    
+    const vibeInput = document.getElementById('vibeInput');
+    if (!vibeInput) {
+        console.error('❌ Vibe input not found');
+        return;
+    }
+
+    const vibeText = vibeInput.value.trim();
+    
+    // Check if we have either text or image
+    if (!vibeText && !uploadedImageFile) {
+        showError('Please enter a vibe or upload an image to search');
+        return;
+    }
+
+    showLoading();
+    
+    const btn = document.querySelector('.vibe-card .search-btn');
+    let prevText = 'Find Vibes';
+    if (btn) {
+        prevText = btn.innerText;
+        btn.innerText = uploadedImageFile ? 'Analyzing Image...' : 'Searching...';
+        btn.disabled = true;
+    }
+
+    try {
+        let response, data;
+        
+        if (uploadedImageFile) {
+            // Image search
+            console.log('📡 Performing image search with:', uploadedImageFile.name);
+            
+            const formData = new FormData();
+            formData.append('file', uploadedImageFile);
+            formData.append('max_results', '9');
+            
+            response = await fetch(BACKEND_URL + '/search/image', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            data = await response.json();
+            console.log('📡 Image search response:', data);
+            
+        } else {
+            // Text search (existing functionality)
+            console.log('📡 Performing text search for:', vibeText);
+            
+            response = await fetch(BACKEND_URL + '/search/vibe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ vibe: vibeText, max_results: 9 })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            data = await response.json();
+            console.log('📡 Text search response:', data);
+        }
+        
+        const products = data.products || data.results || [];
+        console.log('📦 Extracted products:', products);
+        
+        if (products.length > 0) {
+            const searchType = uploadedImageFile ? 'image' : 'text';
+            const searchQuery = uploadedImageFile ? uploadedImageFile.name : vibeText;
+            
+            showSuccess(`Found ${products.length} products matching your ${searchType} search`);
+            setTimeout(() => renderProducts(products), 100);
+            
+            // Show analysis info for image search
+            if (uploadedImageFile && data.analysis) {
+                setTimeout(() => {
+                    const resultsGrid = document.getElementById('resultsGrid');
+                    if (resultsGrid && data.analysis.vibe_keywords) {
+                        const analysisDiv = document.createElement('div');
+                        analysisDiv.style.cssText = 'margin-bottom: 20px; padding: 12px; background: #e8f4fd; border-radius: 6px; border-left: 4px solid #2196f3;';
+                        analysisDiv.innerHTML = `
+                            <div style="font-weight: 600; margin-bottom: 4px;">🤖 AI Analysis:</div>
+                            <div style="font-size: 13px; color: #666;">Detected vibes: ${data.analysis.vibe_keywords.join(', ')}</div>
+                        `;
+                        resultsGrid.insertBefore(analysisDiv, resultsGrid.firstChild);
+                    }
+                }, 200);
+            }
+            
+        } else {
+            showError('No products found. Try a different search.');
+        }
+        
+    } catch (error) {
+        console.error('❌ Search failed:', error);
+        
+        if (error.message.includes('503')) {
+            showError('Image search requires AI service. Please try text search instead.');
+        } else {
+            showError(`Search failed: ${error.message}`);
+        }
+    } finally {
+        if (btn) {
+            btn.innerText = prevText;
+            btn.disabled = false;
+        }
+    }
+}
+
+// Make functions globally available
+window.handleImageUpload = handleImageUpload;
+window.clearImageUpload = clearImageUpload;
+
+//# sourceMappingURL=main.js.map
